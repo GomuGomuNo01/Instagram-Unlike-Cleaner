@@ -1,0 +1,23 @@
+# Environnements et secrets
+.venv/
+.env
+
+# Données locales (profil navigateur = cookies de session, base, rapports)
+data/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# IDE
+.idea/
+
+# Frontend (plus tard)
+frontend/node_modules/
+frontend/dist/
