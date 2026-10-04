@@ -61,8 +61,9 @@ class Job(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     filters: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
     status: JobStatus = Field(default=JobStatus.CREATED, index=True)
-    # Compte connecté au lancement : la reprise refusera d'agir sur un autre compte.
-    account_username: str | None = None
+    # Identifiant numérique du compte connecté au lancement (cookie ds_user_id) :
+    # la reprise refusera d'agir sur un autre compte.
+    account_id: str | None = None
     created_at: datetime = Field(default_factory=utcnow, sa_type=UTCDateTime)
     started_at: datetime | None = Field(default=None, sa_type=UTCDateTime)
     finished_at: datetime | None = Field(default=None, sa_type=UTCDateTime)

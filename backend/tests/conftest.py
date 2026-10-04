@@ -9,6 +9,12 @@ from app.core.logs import LOGGER_NAME
 ENV_VARS = ("DATA_DIR", "DAILY_LIMIT", "DELAY_MIN", "DELAY_MAX", "BATCH_SIZE", "LOG_LEVEL")
 
 
+@pytest.fixture
+def anyio_backend() -> str:
+    """Les tests marqués `anyio` tournent sur asyncio, comme Playwright et FastAPI."""
+    return "asyncio"
+
+
 @pytest.fixture(autouse=True)
 def isolate_environment(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     """Chaque test part d'un environnement vierge, sans les variables ni le .env du poste."""

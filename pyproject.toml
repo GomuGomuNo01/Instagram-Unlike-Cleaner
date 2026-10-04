@@ -38,6 +38,7 @@ packages = ["backend/app"]
 [tool.pytest.ini_options]
 testpaths = ["backend/tests"]
 pythonpath = ["backend"]
+markers = ["browser: lance Chromium sans fenêtre, sur de fausses pages Instagram (plus lent)"]
 
 [tool.ruff]
 line-length = 100

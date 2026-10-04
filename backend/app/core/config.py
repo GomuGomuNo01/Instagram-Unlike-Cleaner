@@ -50,6 +50,10 @@ class Settings(BaseSettings):
     def logs_dir(self) -> Path:
         return self.data_dir / "logs"
 
+    @property
+    def diagnostics_dir(self) -> Path:
+        return self.data_dir / "diagnostics"
+
     def ensure_dirs(self) -> None:
         """Crée le dossier de données et ses sous-dossiers s'ils n'existent pas."""
         for directory in (
