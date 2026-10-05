@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from sqlalchemy import Engine
-from sqlmodel import Session, col, select
+from sqlmodel import Session, col, func, select
 
 from app.models.columns import utcnow
 from app.models.schemas import CleanupFilters
@@ -110,6 +110,31 @@ def stop_job(engine: Engine, job_id: int) -> JobStatus:
         return previous
 
 
+def list_items(
+    engine: Engine,
+    job_id: int,
+    *,
+    status: ItemStatus | None = None,
+    offset: int = 0,
+    limit: int = 50,
+) -> tuple[list[LikedItem], int]:
+    """Likes ciblés d'un nettoyage, dans l'ordre de la grille, page par page.
+    Renvoie la page demandée et le nombre total de likes correspondants."""
+    with Session(engine) as db:
+        conditions = [LikedItem.job_id == job_id]
+        if status is not None:
+            conditions.append(LikedItem.status == status)
+        total = db.exec(select(func.count()).select_from(LikedItem).where(*conditions)).one()
+        items = db.exec(
+            select(LikedItem)
+            .where(*conditions)
+            .order_by(col(LikedItem.position))
+            .offset(offset)
+            .limit(limit)
+        ).all()
+        return list(items), total
+
+
 def job_overview(engine: Engine, job_id: int) -> JobOverview | None:
     with Session(engine) as db:
         job = db.get(Job, job_id)
@@ -138,14 +163,17 @@ def set_excluded(
     engine: Engine,
     job_id: int,
     *,
-    ranks: list[int],
-    authors: list[str],
+    ranks: list[int] | None = None,
+    authors: list[str] | None = None,
+    item_ids: list[int] | None = None,
     restore: bool = False,
 ) -> int:
     """Exclut du nettoyage (ou y remet, avec `restore`) les likes désignés par leur rang
-    dans le CSV d'aperçu ou par leur auteur. Renvoie le nombre de likes modifiés."""
-    positions = {rank - 1 for rank in ranks}
-    wanted_authors = {author.strip().removeprefix("@").lower() for author in authors}
+    dans le CSV d'aperçu, leur auteur ou leur identifiant en base (utilisé par l'API).
+    Renvoie le nombre de likes modifiés."""
+    positions = {rank - 1 for rank in ranks or ()}
+    wanted_ids = set(item_ids or ())
+    wanted_authors = {author.strip().removeprefix("@").lower() for author in authors or ()}
     with Session(engine) as db:
         job = db.get(Job, job_id)
         if job is None:
@@ -163,7 +191,9 @@ def set_excluded(
         changed = [
             item
             for item in items
-            if item.position in positions or (item.author or "") in wanted_authors
+            if item.position in positions
+            or item.id in wanted_ids
+            or (item.author or "") in wanted_authors
         ]
         for item in changed:
             item.status = back_to if restore else ItemStatus.EXCLUDED

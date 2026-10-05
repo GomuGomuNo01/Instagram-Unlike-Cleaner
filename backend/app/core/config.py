@@ -25,6 +25,11 @@ class Settings(BaseSettings):
     # Likes retirés par lot, c'est-à-dire par clic sur « Je n’aime plus ».
     batch_size: int = Field(default=20, ge=1)
     log_level: LogLevel = "INFO"
+    # API locale : toujours sur 127.0.0.1, seul le port se règle.
+    api_port: int = Field(default=8765, ge=1024, le=65535)
+    # Origines autorisées à appeler l'API depuis un navigateur : le serveur de développement
+    # du frontend (Vite). L'interface compilée est servie par l'API elle-même.
+    api_cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
     @field_validator("log_level", mode="before")
     @classmethod

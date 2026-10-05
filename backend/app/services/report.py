@@ -180,6 +180,15 @@ def export_report_json(report: JobReport, path: Path) -> Path:
     return path
 
 
+def write_report_files(engine: Engine, reports_dir: Path, job_id: int) -> tuple[Path, Path]:
+    """Écrit rapport-N.csv et rapport-N.json dans le dossier des rapports."""
+    job_report = build_report(engine, job_id)
+    return (
+        export_report_csv(job_report, reports_dir / f"rapport-{job_id}.csv"),
+        export_report_json(job_report, reports_dir / f"rapport-{job_id}.json"),
+    )
+
+
 def summary_lines(report: JobReport) -> list[str]:
     """Résumé lisible du rapport, une information par ligne."""
     counts = report.counts

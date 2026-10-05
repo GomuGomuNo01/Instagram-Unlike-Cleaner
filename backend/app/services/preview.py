@@ -1,5 +1,6 @@
 """Aperçu d'un nettoyage : collecte des likes ciblés, enregistrement en base et export."""
 
+import asyncio
 import csv
 from collections import Counter
 from collections.abc import Callable
@@ -44,16 +45,25 @@ async def run_preview(
     account_id: str | None,
     max_scanned: int | None = None,
     on_progress: Callable[[int], None] | None = None,
+    job_id: int | None = None,
 ) -> PreviewResult:
     """Crée une demande, collecte les likes ciblés sur la page des likes déjà ouverte, et
-    les enregistre au statut « en attente » : rien n'est retiré à cette étape."""
-    job_id = create_job(engine, filters, account_id)
+    les enregistre au statut « en attente » : rien n'est retiré à cette étape.
+
+    `job_id` désigne une demande déjà créée (statut « collecte »), par exemple par l'API,
+    qui doit renvoyer son numéro avant la fin de la collecte.
+    """
+    if job_id is None:
+        job_id = create_job(engine, filters, account_id)
     try:
         await apply_native_filters(session.page, filters)
         thumbnails = await load_grid(session.page, max_items=max_scanned, on_progress=on_progress)
     except (GridInterrupted, NativeFilterError, PlaywrightError) as exc:
         fail_job(engine, job_id, f"Collecte interrompue : {exc}")
         raise PreviewError(f"Collecte interrompue : {exc}") from exc
+    except asyncio.CancelledError:
+        fail_job(engine, job_id, "Collecte interrompue avant la fin")
+        raise
 
     targeted = [
         LikedItem(

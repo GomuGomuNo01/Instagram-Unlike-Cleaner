@@ -31,6 +31,17 @@ class RedactSecretsFilter(logging.Filter):
         return True
 
 
+def close_logging() -> bool:
+    """Ferme les sorties du logger (dont le fichier, que Windows refuse sinon de supprimer).
+    Renvoie True si des sorties étaient ouvertes."""
+    logger = logging.getLogger(LOGGER_NAME)
+    handlers = list(logger.handlers)
+    for handler in handlers:
+        logger.removeHandler(handler)
+        handler.close()
+    return bool(handlers)
+
+
 def setup_logging(settings: Settings) -> logging.Logger:
     """Configure le logger de l'application. Peut être rappelée sans dupliquer les sorties."""
     logger = logging.getLogger(LOGGER_NAME)

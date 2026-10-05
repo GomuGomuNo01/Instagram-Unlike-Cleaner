@@ -2,14 +2,15 @@ import asyncio
 import signal
 from collections.abc import Awaitable, Callable
 from datetime import datetime
-from pathlib import Path
 from types import FrameType
 from typing import Annotated
 
 import typer
+import uvicorn
 from pydantic import ValidationError
 from sqlalchemy import Engine
 
+from app.api.security import TOKEN_HEADER, new_token
 from app.browser.probe import ProbeError, run_probe
 from app.browser.session import (
     OUTCOME_MESSAGES,
@@ -21,6 +22,7 @@ from app.browser.session import (
 from app.core.config import Settings, get_settings
 from app.core.db import OutdatedSchemaError, init_db, make_engine
 from app.core.logs import setup_logging
+from app.main import create_app
 from app.models.schemas import CleanupFilters, ContentFilter, SortOrder
 from app.models.tables import ItemStatus, JobStatus
 from app.services.cleanup import STOP_MESSAGES, CleanupControl, run_cleanup, today_count
@@ -51,9 +53,8 @@ from app.services.preview import (
 from app.services.report import (
     ITEM_STATUS_LABELS,
     build_report,
-    export_report_csv,
-    export_report_json,
     summary_lines,
+    write_report_files,
 )
 
 app = typer.Typer(no_args_is_help=True)
@@ -72,6 +73,29 @@ def main() -> None:
 def version() -> None:
     """Affiche la version installée."""
     typer.echo("0.1.0")
+
+
+@app.command()
+def serve(
+    port: Annotated[
+        int | None,
+        typer.Option(min=1024, max=65535, help="Port de l'API (par défaut : API_PORT, 8765)."),
+    ] = None,
+) -> None:
+    """Lance l'API locale, sur 127.0.0.1 uniquement (documentation sur /docs)."""
+    settings = get_settings()
+    settings.ensure_dirs()
+    setup_logging(settings)
+    port = port or settings.api_port
+    token = new_token()
+    api = create_app(settings, token=token)
+    typer.echo(f"API locale : http://127.0.0.1:{port}  (documentation : /docs)")
+    typer.echo(f"Jeton à envoyer dans l'en-tête {TOKEN_HEADER} : {token}")
+    typer.echo("Ctrl+C pour arrêter le serveur : un nettoyage en cours passe en pause.")
+    # Journal d'accès désactivé : il afficherait le jeton passé dans l'URL du flux SSE.
+    config = uvicorn.Config(api, host="127.0.0.1", port=port, access_log=False, log_level="warning")
+    # asyncio.run utilise sous Windows la boucle Proactor, nécessaire à Playwright.
+    asyncio.run(uvicorn.Server(config).serve())
 
 
 @app.command()
@@ -350,7 +374,7 @@ def run(
         )
         overview = job_overview(engine, job_id)
         if overview is not None and overview.status in (JobStatus.COMPLETED, JobStatus.STOPPED):
-            csv_path, _ = _write_report(engine, settings, job_id)
+            csv_path, _ = write_report_files(engine, settings.reports_dir, job_id)
             typer.echo(f"  Rapport final : {csv_path}")
         else:
             typer.echo(f"  Bilan à tout moment : iuc report {job_id}")
@@ -399,7 +423,7 @@ def report(
     engine = _open_database()
     try:
         job_report = build_report(engine, job_id)
-        csv_path, json_path = _write_report(engine, settings, job_id)
+        csv_path, json_path = write_report_files(engine, settings.reports_dir, job_id)
     except JobActionRefused as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(1) from exc
@@ -480,15 +504,6 @@ def purge(
         typer.echo("Aucune donnée locale à supprimer.")
     for path in deleted:
         typer.echo(f"Supprimé : {path}")
-
-
-def _write_report(engine: Engine, settings: Settings, job_id: int) -> tuple[Path, Path]:
-    job_report = build_report(engine, job_id)
-    reports_dir = settings.reports_dir
-    return (
-        export_report_csv(job_report, reports_dir / f"rapport-{job_id}.csv"),
-        export_report_json(job_report, reports_dir / f"rapport-{job_id}.json"),
-    )
 
 
 def _open_database() -> Engine:
