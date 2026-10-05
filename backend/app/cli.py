@@ -1,8 +1,10 @@
 import asyncio
+from collections.abc import Awaitable, Callable
 from typing import Annotated
 
 import typer
 
+from app.browser.probe import ProbeError, run_probe
 from app.browser.session import (
     OUTCOME_MESSAGES,
     BrowserSession,
@@ -14,6 +16,8 @@ from app.core.db import init_db, make_engine
 from app.core.logs import setup_logging
 
 app = typer.Typer(no_args_is_help=True)
+
+TimeoutOption = Annotated[int, typer.Option(help="Temps laissé pour se connecter, en secondes.")]
 
 
 @app.callback()
@@ -41,27 +45,57 @@ def init() -> None:
 
 @app.command()
 def login(
-    timeout: Annotated[
-        int, typer.Option(help="Temps laissé pour se connecter, en secondes.")
-    ] = 300,
+    timeout: TimeoutOption = 300,
     snapshot: Annotated[
         bool,
         typer.Option(help="Enregistre la structure de la page des likes (DATA_DIR/diagnostics)."),
     ] = False,
 ) -> None:
     """Ouvre Instagram, attend la connexion manuelle et vérifie la page des likes."""
+
+    async def after_likes_page(session: BrowserSession, settings: Settings) -> None:
+        if snapshot:
+            report = await session.save_diagnostic(settings.diagnostics_dir, "likes")
+            typer.echo(f"Diagnostic : {report}")
+
+    _run_in_browser(timeout, after_likes_page)
+
+
+@app.command()
+def probe(timeout: TimeoutOption = 300) -> None:
+    """Explore la page des likes (filtres, mode sélection) sans rien retirer."""
+
+    async def explore(session: BrowserSession, settings: Settings) -> None:
+        typer.echo(
+            "Exploration en cours : ne clique pas dans la fenêtre. Aucun like ne sera retiré."
+        )
+        reports = await run_probe(session, settings.diagnostics_dir)
+        typer.echo("Diagnostics enregistrés :")
+        for report in reports:
+            typer.echo(f"  {report}")
+
+    _run_in_browser(timeout, explore)
+
+
+LikesPageStep = Callable[[BrowserSession, Settings], Awaitable[None]]
+
+
+def _run_in_browser(timeout: int, on_likes_page: LikesPageStep) -> None:
+    """Ouvre le navigateur, attend la connexion, ouvre la page des likes puis lance l'étape."""
     settings = get_settings()
     settings.ensure_dirs()
     setup_logging(settings)
     try:
-        outcome = asyncio.run(_login(settings, timeout, snapshot))
-    except BrowserStartError as exc:
+        outcome = asyncio.run(_open_likes_page(settings, timeout, on_likes_page))
+    except (BrowserStartError, ProbeError) as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(1) from exc
     raise typer.Exit(0 if outcome is NavigationOutcome.OK else 1)
 
 
-async def _login(settings: Settings, timeout: int, snapshot: bool) -> NavigationOutcome | None:
+async def _open_likes_page(
+    settings: Settings, timeout: int, on_likes_page: LikesPageStep
+) -> NavigationOutcome | None:
     async with BrowserSession(settings.browser_profile_dir) as session:
         await session.open_home()
         status = await session.status()
@@ -78,7 +112,9 @@ async def _login(settings: Settings, timeout: int, snapshot: bool) -> Navigation
 
         outcome = await session.open_likes_page()
         typer.echo(OUTCOME_MESSAGES[outcome])
-        if snapshot or outcome is NavigationOutcome.LAYOUT_CHANGED:
+        if outcome is NavigationOutcome.OK:
+            await on_likes_page(session, settings)
+        elif outcome is NavigationOutcome.LAYOUT_CHANGED:
             report = await session.save_diagnostic(settings.diagnostics_dir, "likes")
             typer.echo(f"Diagnostic : {report}")
         if session.is_open:
