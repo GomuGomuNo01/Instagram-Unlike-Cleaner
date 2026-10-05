@@ -26,9 +26,23 @@ from app.browser.locators import PageKind
 
 logger = logging.getLogger(__name__)
 
-# Nombre de vignettes dont le HTML est recopié dans un diagnostic.
-DIAGNOSTIC_THUMBNAILS = 3
+# Délai laissé à Instagram pour ouvrir une fenêtre par-dessus la page des likes, comme
+# « Enregistrer vos informations de connexion ? » juste après une connexion.
+DIALOG_SETTLE = 1.5
 _URL_QUERY = re.compile(r"(https?://[^\s\"'?,]+)\?[^\s\"',]*")
+# HTML de la première vignette de chaque type (Photo, Vidéo, Carrousel), pour les diagnostics.
+_THUMBNAIL_SAMPLES_JS = """
+() => {
+  const labeled = '[role="button"][aria-label]';
+  const samples = {};
+  for (const element of document.querySelectorAll(labeled)) {
+    if (element.parentElement && element.parentElement.closest(labeled)) continue;
+    const kind = (element.getAttribute('aria-label') || '').split(/[\\s,]/)[0];
+    if (kind && !(kind in samples)) samples[kind] = element.outerHTML;
+  }
+  return Object.values(samples);
+}
+"""
 
 
 class BrowserStartError(RuntimeError):
@@ -40,6 +54,7 @@ class NavigationOutcome(StrEnum):
     LOGIN_REQUIRED = "login_required"
     CHALLENGE = "challenge"
     CONSENT_REQUIRED = "consent_required"
+    BLOCKING_DIALOG = "blocking_dialog"
     UNEXPECTED_PAGE = "unexpected_page"
     LAYOUT_CHANGED = "layout_changed"
     UNREACHABLE = "unreachable"
@@ -57,6 +72,11 @@ OUTCOME_MESSAGES: dict[NavigationOutcome, str] = {
     NavigationOutcome.CONSENT_REQUIRED: (
         "Instagram affiche un écran de consentement (abonnement ou publicités). Fais ton choix "
         "toi-même dans la fenêtre, puis relance. Le script ne répond jamais à ta place."
+    ),
+    NavigationOutcome.BLOCKING_DIALOG: (
+        "Une fenêtre d'Instagram recouvre la page des likes, par exemple « Enregistrer vos "
+        "informations de connexion ? ». Ferme-la toi-même dans la fenêtre, puis relance. "
+        "Le script n'y répond pas à ta place."
     ),
     NavigationOutcome.UNEXPECTED_PAGE: (
         "Instagram a affiché une autre page que celle des likes, par exemple après un clic "
@@ -240,7 +260,12 @@ class BrowserSession:
                 outcome = _STOP_PAGES[kind]
                 break
             if kind is PageKind.LIKES and await marker.is_visible():
-                outcome = NavigationOutcome.OK
+                # Le repère peut être présent sous une fenêtre qui empêche tout clic.
+                await asyncio.sleep(DIALOG_SETTLE)
+                if await locators.blocking_dialog(self.page).is_visible():
+                    outcome = NavigationOutcome.BLOCKING_DIALOG
+                else:
+                    outcome = NavigationOutcome.OK
                 break
             if time.monotonic() >= deadline:
                 outcome = (
@@ -254,8 +279,8 @@ class BrowserSession:
         return outcome
 
     async def save_diagnostic(self, directory: Path, label: str) -> Path:
-        """Enregistre l'adresse, les liens, l'arbre d'accessibilité, le HTML des premières
-        vignettes et une capture de la page.
+        """Enregistre l'adresse, les liens, l'arbre d'accessibilité, le HTML d'une vignette
+        de chaque type et une capture de la page.
 
         Sert à ajuster `locators.py`. Les fichiers restent dans le dossier de données local ;
         ils contiennent les noms des comptes aimés, à masquer avant de les partager.
@@ -269,14 +294,12 @@ class BrowserSession:
             ),
         )
         aria = await self.page.locator("body").aria_snapshot()
-        thumbnails = locators.thumbnails(self.page)
-        thumbnail_count = await thumbnails.count()
-        thumbnail_html = [
-            # Les paramètres des adresses d'images (signatures temporaires) sont retirés :
-            # seul le nom du fichier peut servir d'identifiant.
-            _URL_QUERY.sub(r"\1?…", await thumbnails.nth(index).evaluate("el => el.outerHTML"))
-            for index in range(min(DIAGNOSTIC_THUMBNAILS, thumbnail_count))
-        ]
+        thumbnail_count = await locators.thumbnails(self.page).count()
+        samples = cast(list[str], await self.page.evaluate(_THUMBNAIL_SAMPLES_JS))
+        # Les paramètres des adresses d'images (signatures temporaires) sont retirés :
+        # seul le nom du fichier sert d'identifiant.
+        thumbnail_html = [_URL_QUERY.sub(r"\1?…", sample) for sample in samples]
+        native_selects = await self.page.locator("select").count()
         report = directory / f"{stem}.txt"
         report.write_text(
             "\n".join(
@@ -289,8 +312,9 @@ class BrowserSession:
                     "== Arbre d'accessibilité ==",
                     aria,
                     "",
-                    f"== Vignettes ({thumbnail_count} chargées, HTML des {len(thumbnail_html)} "
-                    "premières) ==",
+                    f"Listes déroulantes natives (select) : {native_selects}",
+                    "",
+                    f"== Vignettes ({thumbnail_count} chargées, HTML d'une vignette par type) ==",
                     *thumbnail_html,
                 ]
             ),

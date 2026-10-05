@@ -135,6 +135,26 @@ async def test_detects_consent_screen_without_answering_it(
     assert status.logged_in
 
 
+async def test_stops_when_a_dialog_covers_the_likes_page(
+    session: BrowserSession, fake_instagram: FakeInstagram
+) -> None:
+    # Cas de l'essai du 05/10/2026 à 09:44, juste après une connexion.
+    fake_instagram.page(
+        locators.LIKES_PATH,
+        LIKES_PAGE_FR.replace(
+            "</body>",
+            "<div role='dialog'>Enregistrer vos informations de connexion ?"
+            "<button>Enregistrer les informations</button><button>Plus tard</button></div>"
+            "</body>",
+        ),
+    )
+    await log_in(session.context)
+
+    assert await session.open_likes_page(timeout=5) is NavigationOutcome.BLOCKING_DIALOG
+    # Le script n'a pas répondu à la place de l'utilisateur : la fenêtre est toujours là.
+    assert await session.page.get_by_role("button", name="Plus tard").is_visible()
+
+
 async def test_detects_another_page_without_logging_its_address(
     session: BrowserSession,
     fake_instagram: FakeInstagram,
@@ -182,7 +202,7 @@ async def test_save_diagnostic_lists_structure_and_thumbnails(
     content = report.read_text(encoding="utf-8")
     assert locators.LIKES_PATH in content
     assert "Sélectionner" in content
-    assert "== Vignettes (3 chargées, HTML des 3 premières) ==" in content
+    assert "== Vignettes (3 chargées, HTML d'une vignette par type) ==" in content
     assert "1000_1_n.jpg" in content
     assert "signature-secrete" not in content
     assert report.with_suffix(".png").is_file()

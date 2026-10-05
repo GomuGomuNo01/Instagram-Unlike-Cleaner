@@ -4,6 +4,8 @@ from pathlib import Path
 
 import pytest
 
+from app.browser import grid, native_filters
+from app.browser import session as session_module
 from app.browser.session import BrowserSession
 from app.core.config import get_settings
 from app.core.logs import LOGGER_NAME
@@ -31,6 +33,14 @@ def isolate_environment(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
         logger.removeHandler(handler)
         handler.close()
     logger.propagate = True
+
+
+@pytest.fixture(autouse=True)
+def fast_timings(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Raccourcit les pauses prévues pour le vrai Instagram : la fausse page répond vite."""
+    monkeypatch.setattr(session_module, "DIALOG_SETTLE", 0.05)
+    monkeypatch.setattr(native_filters, "SETTLE_DELAY", 0.4)
+    monkeypatch.setattr(grid, "SCROLL_PAUSE", 0.25)
 
 
 @pytest.fixture

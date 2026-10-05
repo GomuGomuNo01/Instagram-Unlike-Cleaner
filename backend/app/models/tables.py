@@ -48,9 +48,12 @@ class ItemStatus(StrEnum):
     SKIPPED = "skipped"  # ignoré : contenu supprimé, compte devenu privé...
 
 
-class ContentType(StrEnum):
-    POST = "post"
-    REEL = "reel"
+class MediaKind(StrEnum):
+    """Type de publication, tel que l'indique le libellé de la vignette."""
+
+    PHOTO = "photo"
+    VIDEO = "video"  # les vidéos publiées depuis 2022 sont des Reels
+    CAROUSEL = "carousel"
 
 
 class Job(SQLModel, table=True):
@@ -73,14 +76,18 @@ class LikedItem(SQLModel, table=True):
     """Un like ciblé par une demande, et son avancement."""
 
     __tablename__ = "liked_item"
-    __table_args__ = (UniqueConstraint("job_id", "url"),)
+    __table_args__ = (UniqueConstraint("job_id", "media_key"),)
 
     id: int | None = Field(default=None, primary_key=True)
     job_id: int = Field(foreign_key="job.id", index=True, ondelete="CASCADE")
-    url: str
+    # Les vignettes n'ont pas de lien vers la publication : on les identifie par le nom du
+    # fichier de leur image, stable d'un chargement à l'autre.
+    media_key: str
+    position: int  # rang dans la grille au moment de la collecte, à partir de 0
+    label: str  # libellé complet de la vignette
     author: str | None = None
-    content_type: ContentType | None = None
-    liked_at: datetime | None = Field(default=None, sa_type=UTCDateTime)  # si Instagram la donne
+    media_kind: MediaKind | None = None
+    published_on: date | None = None  # date de publication ; celle du like n'est pas affichée
     status: ItemStatus = Field(default=ItemStatus.PENDING, index=True)
     error: str | None = None
     processed_at: datetime | None = Field(default=None, sa_type=UTCDateTime)

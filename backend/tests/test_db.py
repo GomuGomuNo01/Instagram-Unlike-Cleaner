@@ -7,8 +7,19 @@ from sqlalchemy import Engine, inspect
 from sqlalchemy.exc import IntegrityError, StatementError
 from sqlmodel import Session, select
 
-from app.core.db import init_db, make_engine
-from app.models.tables import DailyCounter, EventLog, Job, LikedItem
+from app.core.db import OutdatedSchemaError, init_db, make_engine
+from app.models.tables import DailyCounter, EventLog, Job, LikedItem, MediaKind
+
+
+def make_item(job_id: int, media_key: str) -> LikedItem:
+    return LikedItem(
+        job_id=job_id,
+        media_key=media_key,
+        position=0,
+        label="Vidéo, 1 sur 18, de @auteur, partagée le October 3, 2026",
+        author="auteur",
+        media_kind=MediaKind.VIDEO,
+    )
 
 
 @pytest.fixture
@@ -69,21 +80,33 @@ def test_rejects_naive_datetime(engine: Engine) -> None:
             session.commit()
 
 
-def test_same_url_cannot_be_targeted_twice_by_a_job(engine: Engine) -> None:
+def test_outdated_schema_is_reported_clearly(tmp_path: Path) -> None:
+    engine = make_engine(tmp_path / "ancienne.db")
+    with engine.begin() as connection:
+        connection.exec_driver_sql(
+            "CREATE TABLE liked_item (id INTEGER PRIMARY KEY, job_id INTEGER, url VARCHAR)"
+        )
+
+    with pytest.raises(OutdatedSchemaError, match="liked_item"):
+        init_db(engine)
+    engine.dispose()
+
+
+def test_same_media_cannot_be_targeted_twice_by_a_job(engine: Engine) -> None:
     with Session(engine) as session:
         job = Job()
         session.add(job)
         session.commit()
         assert job.id is not None
-        session.add(LikedItem(job_id=job.id, url="https://www.instagram.com/p/abc/"))
-        session.add(LikedItem(job_id=job.id, url="https://www.instagram.com/p/abc/"))
+        session.add(make_item(job.id, "111_222_333_n"))
+        session.add(make_item(job.id, "111_222_333_n"))
         with pytest.raises(IntegrityError):
             session.commit()
 
 
 def test_foreign_keys_are_enforced(engine: Engine) -> None:
     with Session(engine) as session:
-        session.add(LikedItem(job_id=999, url="https://www.instagram.com/p/abc/"))
+        session.add(make_item(999, "111_222_333_n"))
         with pytest.raises(IntegrityError):
             session.commit()
 
@@ -94,7 +117,7 @@ def test_deleting_a_job_deletes_its_items_and_events(engine: Engine) -> None:
         session.add(job)
         session.commit()
         assert job.id is not None
-        session.add(LikedItem(job_id=job.id, url="https://www.instagram.com/reel/xyz/"))
+        session.add(make_item(job.id, "444_555_666_n"))
         session.add(EventLog(job_id=job.id, message="collecte terminée"))
         session.commit()
 
