@@ -167,7 +167,7 @@ Meta.
 pre-commit install                  # contrôles automatiques avant chaque commit
 pytest                              # backend ; -m "not browser" pour sauter les tests Chromium
 ruff check backend scripts && ruff format --check backend scripts && mypy
-pip-audit                           # vulnérabilités connues des dépendances Python
+pip-audit -r constraints.txt --no-deps --disable-pip   # vulnérabilités connues
 cd frontend
 npm test && npm run lint && npm run typecheck && npm run format:check
 npm run audit                       # vulnérabilités connues des dépendances npm

@@ -22,8 +22,8 @@ jobs:
         # Version minimale prise en charge et version de développement.
         python: ["3.11", "3.14"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
           cache: pip
@@ -40,8 +40,8 @@ jobs:
         run: mypy
       - name: Tests (dont l'automatisation sur la fausse page des likes, réseau coupé)
         run: pytest
-      - name: Audit des dépendances
-        run: pip-audit --skip-editable
+      - name: Audit des dépendances (versions figées de constraints.txt)
+        run: pip-audit -r constraints.txt --no-deps --disable-pip
 
   frontend:
     name: Frontend
@@ -50,8 +50,8 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
