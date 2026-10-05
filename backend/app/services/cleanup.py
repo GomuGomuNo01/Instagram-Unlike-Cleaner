@@ -5,9 +5,13 @@ sélection, lecture de la grille jusqu'aux likes du lot, sélection vérifiée, 
 plus », puis attente de leur disparition. Le rechargement suivant sert aussi de contrôle :
 un like retiré qui réapparaît passe en échec. Chaque résultat est écrit en base avant le lot
 suivant ; au moindre signal d'Instagram, le nettoyage passe en pause et pourra reprendre.
+
+Une pause ou un arrêt demandés (CleanupControl, ou `iuc stop` depuis un autre terminal) sont
+pris en compte entre deux lots, après le contrôle du dernier lot traité.
 """
 
 import asyncio
+import contextlib
 import logging
 import random
 from collections.abc import Callable
@@ -53,6 +57,8 @@ class StopReason(StrEnum):
     SELECTION_MISMATCH = "selection_mismatch"
     NOT_REMOVED = "not_removed"
     PAGE_UNAVAILABLE = "page_unavailable"
+    USER_PAUSE = "user_pause"
+    USER_STOP = "user_stop"
 
 
 STOP_MESSAGES: dict[StopReason, str] = {
@@ -82,8 +88,53 @@ STOP_MESSAGES: dict[StopReason, str] = {
         "échec et le nettoyage est en pause. Un diagnostic a été enregistré."
     ),
     StopReason.PAGE_UNAVAILABLE: "La page des likes n'est plus utilisable. Nettoyage en pause.",
+    StopReason.USER_PAUSE: (
+        "Nettoyage mis en pause à ta demande. Relance la même commande pour continuer."
+    ),
+    StopReason.USER_STOP: (
+        "Nettoyage arrêté à ta demande : les likes non traités ne seront pas retirés."
+    ),
 }
-_NORMAL_STOPS = frozenset({StopReason.COMPLETED, StopReason.RUN_LIMIT, StopReason.DAILY_LIMIT})
+_NORMAL_STOPS = frozenset(
+    {
+        StopReason.COMPLETED,
+        StopReason.RUN_LIMIT,
+        StopReason.DAILY_LIMIT,
+        StopReason.USER_PAUSE,
+        StopReason.USER_STOP,
+    }
+)
+_FINAL_STATUS = {StopReason.COMPLETED: JobStatus.COMPLETED, StopReason.USER_STOP: JobStatus.STOPPED}
+# Repères écrits dans le journal à chaque lancement, et au lancement qui suit une exécution
+# interrompue brutalement : le rapport s'en sert pour calculer la durée active.
+RUN_STARTED_EVENT = "Exécution lancée"
+RUN_INTERRUPTED_EVENT = "Exécution précédente interrompue"
+
+
+class CleanupControl:
+    """Demandes de pause ou d'arrêt d'un nettoyage en cours.
+
+    Elles sont prises en compte entre deux lots : le lot en cours se termine toujours, pour
+    que son résultat soit enregistré et contrôlé. La pause entre deux lots est écourtée.
+    """
+
+    def __init__(self) -> None:
+        self.pause_requested = False
+        self.stop_requested = False
+        self._wake = asyncio.Event()
+
+    def request_pause(self) -> None:
+        self.pause_requested = True
+        self._wake.set()
+
+    def request_stop(self) -> None:
+        self.stop_requested = True
+        self._wake.set()
+
+    async def sleep(self, seconds: float) -> None:
+        """Attend `seconds`, ou moins si une pause ou un arrêt est demandé entre-temps."""
+        with contextlib.suppress(TimeoutError):
+            await asyncio.wait_for(self._wake.wait(), timeout=seconds)
 
 
 @dataclass(frozen=True)
@@ -118,7 +169,7 @@ def start_job(engine: Engine, job_id: int, account_id: str | None) -> None:
             )
         if job.status is JobStatus.RUNNING:
             change_status(job, JobStatus.PAUSED)
-            log_event(db, job_id, "Exécution précédente interrompue : reprise", "WARNING")
+            log_event(db, job_id, f"{RUN_INTERRUPTED_EVENT} : reprise", "WARNING")
         if job.status is JobStatus.READY:
             pending = db.exec(
                 select(LikedItem).where(
@@ -134,6 +185,7 @@ def start_job(engine: Engine, job_id: int, account_id: str | None) -> None:
                 f"Le nettoyage n°{job_id} est au statut « {job.status} » : rien à lancer."
             )
         change_status(job, JobStatus.RUNNING)
+        log_event(db, job_id, RUN_STARTED_EVENT)
         db.commit()
 
 
@@ -147,12 +199,15 @@ async def run_cleanup(
     max_unlikes: int | None = None,
     snapshot: bool = False,
     on_batch: Callable[[int, int], None] | None = None,
+    control: CleanupControl | None = None,
 ) -> CleanupResult:
     """Retire les likes validés d'un nettoyage, lot par lot, sur la page des likes ouverte.
 
     `max_unlikes` limite le nombre de likes retirés pendant cette exécution ; `on_batch`
-    reçoit, après chaque lot, le nombre retiré dans le lot et le total de l'exécution.
+    reçoit, après chaque lot, le nombre retiré dans le lot et le total de l'exécution ;
+    `control` permet de demander une pause ou un arrêt depuis l'extérieur.
     """
+    control = control or CleanupControl()
     start_job(engine, job_id, account_id)
     filters = _job_filters(engine, job_id)
     done = failed = skipped = 0
@@ -167,7 +222,9 @@ async def run_cleanup(
 
     try:
         while True:
-            limit_reason = _limit_reached(engine, settings, max_unlikes, done)
+            limit_reason = _requested_stop(engine, job_id, control) or _limit_reached(
+                engine, settings, max_unlikes, done
+            )
             batch = [] if limit_reason else _next_batch(engine, job_id, settings, max_unlikes, done)
             if not batch and not previous:
                 return stop(limit_reason or StopReason.COMPLETED)
@@ -225,9 +282,9 @@ async def run_cleanup(
             if not_removed:
                 return stop(StopReason.NOT_REMOVED, report.message)
             previous = removed
-            await asyncio.sleep(random.uniform(settings.delay_min, settings.delay_max))
+            await control.sleep(random.uniform(settings.delay_min, settings.delay_max))
     except asyncio.CancelledError:
-        stop(StopReason.PAGE_UNAVAILABLE, "nettoyage interrompu par l'utilisateur")
+        stop(StopReason.USER_PAUSE, "interruption immédiate, sans contrôle du dernier lot")
         raise
     except (GridInterrupted, NativeFilterError, PlaywrightError) as exc:
         return stop(StopReason.PAGE_UNAVAILABLE, str(exc))
@@ -245,6 +302,19 @@ def _job_filters(engine: Engine, job_id: int) -> CleanupFilters:
         job = db.get(Job, job_id)
         assert job is not None
         return CleanupFilters.model_validate(job.filters)
+
+
+def _requested_stop(engine: Engine, job_id: int, control: CleanupControl) -> StopReason | None:
+    """Arrêt ou pause demandés : par `control`, ou par `iuc stop` depuis un autre terminal
+    (le nettoyage est alors déjà au statut « arrêté » en base)."""
+    with Session(engine) as db:
+        job = db.get(Job, job_id)
+        stopped_elsewhere = job is not None and job.status is JobStatus.STOPPED
+    if control.stop_requested or stopped_elsewhere:
+        return StopReason.USER_STOP
+    if control.pause_requested:
+        return StopReason.USER_PAUSE
+    return None
 
 
 def _limit_reached(
@@ -367,8 +437,9 @@ def _finish(
             .select_from(LikedItem)
             .where(LikedItem.job_id == job_id, LikedItem.status == ItemStatus.SELECTED)
         ).one()
-        target = JobStatus.COMPLETED if reason is StopReason.COMPLETED else JobStatus.PAUSED
-        if job.status is not target:
+        target = _FINAL_STATUS.get(reason, JobStatus.PAUSED)
+        # Un nettoyage déjà arrêté depuis un autre terminal garde ce statut.
+        if job.status is not target and job.status is not JobStatus.STOPPED:
             change_status(job, target)
         message = STOP_MESSAGES[reason] + (f" ({detail})" if detail else "")
         level = "INFO" if reason in _NORMAL_STOPS else "WARNING"

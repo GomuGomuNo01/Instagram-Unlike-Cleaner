@@ -129,3 +129,80 @@ def test_run_asks_for_confirmation(data_dir: Path) -> None:
     assert "Retirer jusqu'à 1 likes maintenant" in result.output
     assert "Rien n'a été retiré." in result.output
     assert not (data_dir / "browser-profile" / "Default").exists()
+
+
+def test_report_command_writes_csv_and_json(data_dir: Path) -> None:
+    job_id = make_ready_job(data_dir, ["a", "b"])
+
+    result = CliRunner().invoke(app, ["report", str(job_id)])
+
+    assert result.exit_code == 0, result.output
+    assert f"Nettoyage n°{job_id} : prêt" in result.output
+    assert "Likes ciblés : 2" in result.output
+    assert (data_dir / "reports" / f"rapport-{job_id}.csv").is_file()
+    assert (data_dir / "reports" / f"rapport-{job_id}.json").is_file()
+
+
+def test_report_of_unknown_job(data_dir: Path) -> None:
+    result = CliRunner().invoke(app, ["report", "404"])
+
+    assert result.exit_code == 1
+    assert "Aucun nettoyage n°404" in result.output
+
+
+def test_stop_then_run_is_refused(data_dir: Path) -> None:
+    job_id = make_ready_job(data_dir, ["a"])
+
+    stopped = CliRunner().invoke(app, ["stop", str(job_id), "--yes"])
+    relaunched = CliRunner().invoke(app, ["run", str(job_id), "--yes"])
+
+    assert stopped.exit_code == 0, stopped.output
+    assert f"Nettoyage n°{job_id} arrêté." in stopped.output
+    assert relaunched.exit_code == 1
+    assert "« arrêté »" in relaunched.output
+
+
+def test_stop_asks_for_confirmation(data_dir: Path) -> None:
+    job_id = make_ready_job(data_dir, ["a"])
+
+    result = CliRunner().invoke(app, ["stop", str(job_id)], input="n\n")
+    listed = CliRunner().invoke(app, ["jobs"])
+
+    assert result.exit_code == 1
+    assert f"n°{job_id} [prêt]" in listed.output
+
+
+def test_logout_deletes_only_the_browser_profile(data_dir: Path) -> None:
+    job_id = make_ready_job(data_dir, ["a"])
+    (data_dir / "browser-profile" / "Default").mkdir(parents=True)
+
+    first = CliRunner().invoke(app, ["logout", "--yes"])
+    second = CliRunner().invoke(app, ["logout", "--yes"])
+
+    assert "IUC n'est plus connecté à Instagram" in first.output
+    assert "Aucun profil de navigateur" in second.output
+    assert not (data_dir / "browser-profile").exists()
+    assert CliRunner().invoke(app, ["report", str(job_id)]).exit_code == 0  # base conservée
+
+
+def test_purge_deletes_all_local_data(data_dir: Path) -> None:
+    make_ready_job(data_dir, ["a"])
+
+    result = CliRunner().invoke(app, ["purge", "--yes"])
+
+    assert result.exit_code == 0, result.output
+    assert "Supprimé" in result.output
+    assert not (data_dir / "iuc.db").exists()
+    assert data_dir.is_dir()
+
+
+def test_purge_refuses_a_folder_with_other_files_before_asking(data_dir: Path) -> None:
+    make_ready_job(data_dir, ["a"])
+    (data_dir / "Mes documents").mkdir()
+
+    result = CliRunner().invoke(app, ["purge"])
+
+    assert result.exit_code == 1
+    assert "Mes documents" in result.output
+    assert "Supprimer définitivement" not in result.output
+    assert (data_dir / "iuc.db").exists()

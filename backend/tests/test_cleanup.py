@@ -1,6 +1,7 @@
 """Nettoyage par lots sur la fausse page des likes : retraits, limites, alertes, reprise."""
 
 import asyncio
+import time
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -13,8 +14,8 @@ from app.core.config import Settings
 from app.core.db import init_db, make_engine
 from app.models.schemas import CleanupFilters
 from app.models.tables import ItemStatus, Job, JobStatus, LikedItem
-from app.services.cleanup import StopReason, run_cleanup, today_count
-from app.services.jobs import JobActionRefused, set_excluded
+from app.services.cleanup import CleanupControl, StopReason, run_cleanup, today_count
+from app.services.jobs import JobActionRefused, set_excluded, stop_job
 from app.services.preview import run_preview
 from tests.fake_instagram import FakeInstagram, FakeLike, log_in, make_likes
 
@@ -256,4 +257,72 @@ async def test_interruption_pauses_the_job(
         await cleanup
 
     assert job_status(engine, job_id) is JobStatus.PAUSED
+    assert len(fake_instagram.unliked) == 4
+
+
+async def test_requested_pause_waits_for_the_batch_and_skips_the_long_delay(
+    session: BrowserSession, fake_instagram: FakeInstagram, engine: Engine, tmp_path: Path
+) -> None:
+    job_id = await prepare(session, fake_instagram, engine, make_likes(8))
+    settings = make_settings(tmp_path, delay_min=30, delay_max=30)
+    control = CleanupControl()
+    started = time.monotonic()
+
+    result = await run_cleanup(
+        session,
+        engine,
+        settings,
+        job_id,
+        account_id=ACCOUNT,
+        on_batch=lambda _removed, _total: control.request_pause(),
+        control=control,
+    )
+
+    assert time.monotonic() - started < 25  # la pause de 30 s entre lots a été écourtée
+    assert (result.reason, result.done, result.remaining) == (StopReason.USER_PAUSE, 4, 4)
+    assert job_status(engine, job_id) is JobStatus.PAUSED
+    assert len(fake_instagram.unliked) == 4
+
+
+async def test_requested_stop_abandons_the_remaining_likes(
+    session: BrowserSession, fake_instagram: FakeInstagram, engine: Engine, tmp_path: Path
+) -> None:
+    job_id = await prepare(session, fake_instagram, engine, make_likes(8))
+    control = CleanupControl()
+
+    result = await run_cleanup(
+        session,
+        engine,
+        make_settings(tmp_path),
+        job_id,
+        account_id=ACCOUNT,
+        on_batch=lambda _removed, _total: control.request_stop(),
+        control=control,
+    )
+
+    assert (result.reason, result.done, result.remaining) == (StopReason.USER_STOP, 4, 4)
+    assert job_status(engine, job_id) is JobStatus.STOPPED
+    assert list(statuses(engine, job_id).values()).count(ItemStatus.SELECTED) == 4
+
+
+async def test_stop_from_another_terminal_is_noticed(
+    session: BrowserSession, fake_instagram: FakeInstagram, engine: Engine, tmp_path: Path
+) -> None:
+    job_id = await prepare(session, fake_instagram, engine, make_likes(8))
+
+    def stop_elsewhere(_removed: int, _total: int) -> None:
+        # Équivalent de `iuc stop` lancé dans un autre terminal pendant le premier lot.
+        stop_job(engine, job_id)
+
+    result = await run_cleanup(
+        session,
+        engine,
+        make_settings(tmp_path),
+        job_id,
+        account_id=ACCOUNT,
+        on_batch=stop_elsewhere,
+    )
+
+    assert (result.reason, result.done) == (StopReason.USER_STOP, 4)
+    assert job_status(engine, job_id) is JobStatus.STOPPED
     assert len(fake_instagram.unliked) == 4

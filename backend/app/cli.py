@@ -1,6 +1,9 @@
 import asyncio
+import signal
 from collections.abc import Awaitable, Callable
 from datetime import datetime
+from pathlib import Path
+from types import FrameType
 from typing import Annotated
 
 import typer
@@ -19,8 +22,8 @@ from app.core.config import Settings, get_settings
 from app.core.db import OutdatedSchemaError, init_db, make_engine
 from app.core.logs import setup_logging
 from app.models.schemas import CleanupFilters, ContentFilter, SortOrder
-from app.models.tables import ItemStatus
-from app.services.cleanup import STOP_MESSAGES, run_cleanup, today_count
+from app.models.tables import ItemStatus, JobStatus
+from app.services.cleanup import STOP_MESSAGES, CleanupControl, run_cleanup, today_count
 from app.services.jobs import (
     RUNNABLE,
     STATUS_LABELS,
@@ -29,6 +32,13 @@ from app.services.jobs import (
     job_overview,
     list_jobs,
     set_excluded,
+    stop_job,
+)
+from app.services.local_data import (
+    LocalDataError,
+    delete_browser_profile,
+    delete_local_data,
+    unexpected_entries,
 )
 from app.services.preview import (
     PreviewError,
@@ -38,10 +48,19 @@ from app.services.preview import (
     run_preview,
     summarize,
 )
+from app.services.report import (
+    ITEM_STATUS_LABELS,
+    build_report,
+    export_report_csv,
+    export_report_json,
+    summary_lines,
+)
 
 app = typer.Typer(no_args_is_help=True)
 
 TimeoutOption = Annotated[int, typer.Option(help="Temps laissé pour se connecter, en secondes.")]
+# Nombre d'échecs détaillés par `iuc report` ; la liste complète est dans le CSV.
+_MAX_PROBLEMS_SHOWN = 20
 
 
 @app.callback()
@@ -285,17 +304,43 @@ def run(
         typer.echo(f"  Lot retiré : {removed} likes (total : {total})")
 
     async def clean(session: BrowserSession, settings: Settings, status: SessionStatus) -> None:
-        typer.echo("Nettoyage en cours : ne clique pas dans la fenêtre. Ctrl+C pour l'interrompre.")
-        result = await run_cleanup(
-            session,
-            engine,
-            settings,
-            job_id,
-            account_id=status.account_id,
-            max_unlikes=limit,
-            snapshot=snapshot,
-            on_batch=batch_done,
+        typer.echo(
+            "Nettoyage en cours : ne clique pas dans la fenêtre. Ctrl+C pour le mettre en pause."
         )
+        control = CleanupControl()
+        loop = asyncio.get_running_loop()
+        task = asyncio.current_task()
+        interrupts = 0
+
+        def on_interrupt(_signum: int, _frame: FrameType | None) -> None:
+            # Premier Ctrl+C : pause après le lot en cours, contrôlé et enregistré.
+            # Second Ctrl+C : interruption immédiate (le nettoyage passe tout de même en pause).
+            nonlocal interrupts
+            interrupts += 1
+            if interrupts == 1:
+                typer.echo(
+                    "\nPause demandée : le lot en cours se termine et sera contrôlé. "
+                    "Ctrl+C à nouveau pour interrompre immédiatement."
+                )
+                loop.call_soon_threadsafe(control.request_pause)
+            elif task is not None:
+                loop.call_soon_threadsafe(task.cancel)
+
+        previous_handler = signal.signal(signal.SIGINT, on_interrupt)
+        try:
+            result = await run_cleanup(
+                session,
+                engine,
+                settings,
+                job_id,
+                account_id=status.account_id,
+                max_unlikes=limit,
+                snapshot=snapshot,
+                on_batch=batch_done,
+                control=control,
+            )
+        finally:
+            signal.signal(signal.SIGINT, previous_handler)
         typer.echo(STOP_MESSAGES[result.reason])
         if result.detail:
             typer.echo(f"  Détail : {result.detail}")
@@ -303,11 +348,147 @@ def run(
             f"  Retirés : {result.done} | échecs : {result.failed} | introuvables : "
             f"{result.skipped} | restant à traiter : {result.remaining}"
         )
+        overview = job_overview(engine, job_id)
+        if overview is not None and overview.status in (JobStatus.COMPLETED, JobStatus.STOPPED):
+            csv_path, _ = _write_report(engine, settings, job_id)
+            typer.echo(f"  Rapport final : {csv_path}")
+        else:
+            typer.echo(f"  Bilan à tout moment : iuc report {job_id}")
 
     try:
         _run_in_browser(timeout, clean)
     finally:
         engine.dispose()
+
+
+@app.command()
+def stop(
+    job_id: Annotated[int, typer.Argument(help="Numéro du nettoyage (voir `iuc jobs`).")],
+    yes: Annotated[bool, typer.Option("--yes", help="Ne demande pas de confirmation.")] = False,
+) -> None:
+    """Arrête définitivement un nettoyage : les likes non traités ne seront pas retirés.
+
+    Un nettoyage en cours d'exécution dans un autre terminal s'arrête après son lot en cours.
+    Pour une simple pause, utilise plutôt Ctrl+C pendant `iuc run`.
+    """
+    if not yes and not typer.confirm(
+        f"Arrêter définitivement le nettoyage n°{job_id} ? Il ne pourra pas être repris.",
+        default=False,
+    ):
+        typer.echo("Nettoyage non arrêté.")
+        raise typer.Exit(1)
+    engine = _open_database()
+    try:
+        previous = stop_job(engine, job_id)
+    except JobActionRefused as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
+    finally:
+        engine.dispose()
+    typer.echo(f"Nettoyage n°{job_id} arrêté.")
+    if previous is JobStatus.RUNNING:
+        typer.echo("S'il est en cours d'exécution, il s'arrêtera après son lot en cours.")
+
+
+@app.command()
+def report(
+    job_id: Annotated[int, typer.Argument(help="Numéro du nettoyage (voir `iuc jobs`).")],
+) -> None:
+    """Affiche le bilan d'un nettoyage et l'exporte en CSV et en JSON (DATA_DIR/reports)."""
+    settings = get_settings()
+    engine = _open_database()
+    try:
+        job_report = build_report(engine, job_id)
+        csv_path, json_path = _write_report(engine, settings, job_id)
+    except JobActionRefused as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
+    finally:
+        engine.dispose()
+    for line in summary_lines(job_report):
+        typer.echo(line)
+    problems = job_report.problems
+    if problems:
+        typer.echo("  Échecs et likes introuvables :")
+        for problem in problems[:_MAX_PROBLEMS_SHOWN]:
+            author = f"@{problem.author}" if problem.author else "auteur inconnu"
+            typer.echo(
+                f"    rang {problem.rank}, {author} : {ITEM_STATUS_LABELS[problem.status]}"
+                + (f" ({problem.detail})" if problem.detail else "")
+            )
+        if len(problems) > _MAX_PROBLEMS_SHOWN:
+            typer.echo(f"    … et {len(problems) - _MAX_PROBLEMS_SHOWN} autres, voir le CSV.")
+    typer.echo(f"  Détail : {csv_path}")
+    typer.echo(f"  JSON : {json_path}")
+
+
+@app.command()
+def logout(
+    yes: Annotated[bool, typer.Option("--yes", help="Ne demande pas de confirmation.")] = False,
+) -> None:
+    """Supprime le profil du navigateur, donc ta session Instagram : il faudra te reconnecter.
+
+    Les nettoyages, rapports et journaux sont conservés.
+    """
+    settings = get_settings()
+    if not yes and not typer.confirm(
+        f"Supprimer le profil du navigateur ({settings.browser_profile_dir.resolve()}) ? "
+        "Tu devras te reconnecter à Instagram.",
+        default=False,
+    ):
+        typer.echo("Rien n'a été supprimé.")
+        raise typer.Exit(1)
+    try:
+        deleted = delete_browser_profile(settings)
+    except LocalDataError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
+    if deleted:
+        typer.echo("Profil du navigateur supprimé : IUC n'est plus connecté à Instagram.")
+    else:
+        typer.echo("Aucun profil de navigateur à supprimer.")
+
+
+@app.command()
+def purge(
+    yes: Annotated[bool, typer.Option("--yes", help="Ne demande pas de confirmation.")] = False,
+) -> None:
+    """Supprime toutes les données locales d'IUC : profil du navigateur, base (nettoyages et
+    historique), rapports, diagnostics et journaux. Le fichier .env est conservé."""
+    settings = get_settings()
+    data_dir = settings.data_dir.resolve()
+    if unexpected_entries(settings):
+        # Vérifié avant la question, pour ne pas faire confirmer une suppression refusée.
+        try:
+            delete_local_data(settings)
+        except LocalDataError as exc:
+            typer.echo(str(exc), err=True)
+            raise typer.Exit(1) from exc
+    if not yes and not typer.confirm(
+        f"Supprimer définitivement toutes les données d'IUC dans {data_dir} ? "
+        "L'historique des nettoyages sera perdu.",
+        default=False,
+    ):
+        typer.echo("Rien n'a été supprimé.")
+        raise typer.Exit(1)
+    try:
+        deleted = delete_local_data(settings)
+    except LocalDataError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
+    if not deleted:
+        typer.echo("Aucune donnée locale à supprimer.")
+    for path in deleted:
+        typer.echo(f"Supprimé : {path}")
+
+
+def _write_report(engine: Engine, settings: Settings, job_id: int) -> tuple[Path, Path]:
+    job_report = build_report(engine, job_id)
+    reports_dir = settings.reports_dir
+    return (
+        export_report_csv(job_report, reports_dir / f"rapport-{job_id}.csv"),
+        export_report_json(job_report, reports_dir / f"rapport-{job_id}.json"),
+    )
 
 
 def _open_database() -> Engine:
@@ -353,7 +534,7 @@ def _run_in_browser(timeout: int, on_likes_page: LikesPageStep) -> None:
     except (BrowserStartError, ProbeError, PreviewError, JobActionRefused) as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(1) from exc
-    except KeyboardInterrupt as exc:
+    except (KeyboardInterrupt, asyncio.CancelledError) as exc:
         typer.echo("Interrompu : un nettoyage en cours est passé en pause.", err=True)
         raise typer.Exit(130) from exc
     raise typer.Exit(0 if outcome is NavigationOutcome.OK else 1)

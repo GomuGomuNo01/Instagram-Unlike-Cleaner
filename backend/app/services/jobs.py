@@ -88,6 +88,28 @@ def fail_job(engine: Engine, job_id: int, reason: str) -> None:
         db.commit()
 
 
+def stop_job(engine: Engine, job_id: int) -> JobStatus:
+    """Arrête définitivement un nettoyage : les likes non traités ne seront jamais retirés.
+
+    Un nettoyage en cours d'exécution dans un autre terminal le remarque avant son lot
+    suivant et s'arrête. Renvoie le statut qu'avait le nettoyage avant l'arrêt.
+    """
+    with Session(engine) as db:
+        job = db.get(Job, job_id)
+        if job is None:
+            raise JobActionRefused(f"Aucun nettoyage n°{job_id}.")
+        if job.status not in RUNNABLE:
+            raise JobActionRefused(
+                f"Le nettoyage n°{job_id} est « {STATUS_LABELS[job.status]} » : "
+                "il n'y a rien à arrêter."
+            )
+        previous = job.status
+        change_status(job, JobStatus.STOPPED)
+        log_event(db, job_id, "Nettoyage arrêté par l'utilisateur")
+        db.commit()
+        return previous
+
+
 def job_overview(engine: Engine, job_id: int) -> JobOverview | None:
     with Session(engine) as db:
         job = db.get(Job, job_id)

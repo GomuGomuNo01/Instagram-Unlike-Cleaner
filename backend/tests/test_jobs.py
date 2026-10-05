@@ -12,7 +12,13 @@ from app.core.db import init_db, make_engine
 from app.models.schemas import CleanupFilters
 from app.models.tables import EventLog, ItemStatus, Job, JobStatus, LikedItem, MediaKind
 from app.services.cleanup import start_job
-from app.services.jobs import JobActionRefused, job_overview, list_jobs, set_excluded
+from app.services.jobs import (
+    JobActionRefused,
+    job_overview,
+    list_jobs,
+    set_excluded,
+    stop_job,
+)
 
 
 @pytest.fixture
@@ -132,3 +138,26 @@ def test_start_refusals(engine: Engine, status: JobStatus, account: str, message
 
     with pytest.raises(JobActionRefused, match=message):
         start_job(engine, job_id, account_id=account)
+
+
+@pytest.mark.parametrize("status", [JobStatus.READY, JobStatus.PAUSED, JobStatus.RUNNING])
+def test_stop_job(engine: Engine, status: JobStatus) -> None:
+    job_id = make_job(engine, status, ["a"])
+
+    assert stop_job(engine, job_id) is status
+
+    with Session(engine) as db:
+        job = db.get(Job, job_id)
+        assert job is not None
+        assert job.status is JobStatus.STOPPED
+        assert job.finished_at is not None
+    with pytest.raises(JobActionRefused, match="rien à lancer"):
+        start_job(engine, job_id, account_id="42")
+
+
+@pytest.mark.parametrize("status", [JobStatus.COMPLETED, JobStatus.STOPPED, JobStatus.FAILED])
+def test_stop_refused_once_finished(engine: Engine, status: JobStatus) -> None:
+    job_id = make_job(engine, status, ["a"])
+
+    with pytest.raises(JobActionRefused, match="rien à arrêter"):
+        stop_job(engine, job_id)
