@@ -1,11 +1,18 @@
 # Instagram Unlike Cleaner (IUC)
 
-[![CI](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/actions/workflows/ci.yml)
+[![CI](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/actions/workflows/ci.yml?query=branch%3Amain)
 · Licence MIT · Python 3.11+ · Node.js 22+
 
-Outil local et gratuit pour retirer en masse ses « J’aime » Instagram, en gardant la main sur
-chaque étape : tu choisis les critères, tu vérifies la liste, IUC retire les likes par lots,
-avec des pauses et une limite par jour. Tout reste sur ton ordinateur.
+Une personne veut effacer des années de « J’aime » Instagram, mais l’application ne permet de
+les retirer qu’à la main, et les outils existants demandent souvent le mot de passe ou envoient
+les données à un tiers. IUC liste d’abord tous les likes ciblés (période, type, comptes) pour
+validation, puis les retire par lots avec pauses et limite quotidienne, sans jamais voir le mot
+de passe ni rien envoyer hors de l’ordinateur. Sur un vrai compte, 1 493 likes ont été recensés
+en 14 minutes et chaque lot retiré est contrôlé ; 283 tests automatisés prouvent qu’aucun
+identifiant n’est lu ni conservé.
+
+Technologies : Python, Playwright, FastAPI, SQLite, React, TypeScript, Tailwind CSS, GitHub
+Actions.
 
 > **Avertissement : à lire avant toute utilisation**
 >
