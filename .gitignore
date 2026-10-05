@@ -21,3 +21,7 @@ htmlcov/
 # Frontend
 frontend/node_modules/
 frontend/dist/
+
+# Démonstration (scripts/demo.py) et cahiers des charges, hors dépôt
+demo-data/
+docs/*.pdf

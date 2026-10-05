@@ -8,7 +8,10 @@ cadence et la reprise sont testés sur la fausse page des likes dans test_cleanu
 import ast
 import json
 import re
+import sqlite3
+import subprocess
 from collections.abc import Iterator
+from contextlib import closing
 from pathlib import Path
 
 import pytest
@@ -422,3 +425,46 @@ def test_dependencies_are_pinned() -> None:
     unpinned = [name for name in declared if name.lower().replace("_", "-") not in constraints]
     assert unpinned == []
     assert (ROOT / "frontend" / "package-lock.json").is_file()
+
+
+# --- Dépôt public : aucune donnée personnelle -------------------------------------------
+
+BINARY_SUFFIXES = {".png", ".gif", ".jpg", ".ico", ".woff2", ".pdf"}
+
+
+def test_no_really_liked_account_in_the_repository() -> None:
+    """Aucun compte réellement aimé (lu, en lecture seule, dans la base locale) ne figure dans
+    les fichiers suivis par git. Sans base locale (intégration continue), rien à comparer."""
+    database = ROOT / "data" / "iuc.db"
+    if not database.is_file():
+        pytest.skip("pas de base locale à comparer")
+    try:
+        tracked = subprocess.run(
+            ["git", "ls-files"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            check=True,
+        ).stdout.splitlines()
+    except (OSError, subprocess.CalledProcessError):
+        pytest.skip("git indisponible")
+    with closing(sqlite3.connect(database.resolve().as_uri() + "?mode=ro", uri=True)) as db:
+        rows = db.execute("SELECT DISTINCT author FROM liked_item WHERE author IS NOT NULL")
+        names = sorted({row[0] for row in rows if len(row[0]) >= 4}, key=len, reverse=True)
+    if not names:
+        return
+    pattern = re.compile(r"(?<![\w.])(?:" + "|".join(map(re.escape, names)) + r")(?!\w)")
+
+    offenders = []
+    for name in tracked:
+        path = ROOT / name
+        if path.suffix in BINARY_SUFFIXES:
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        offenders += [f"{name} : @{found}" for found in sorted(set(pattern.findall(text)))]
+
+    assert offenders == []

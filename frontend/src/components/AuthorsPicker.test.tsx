@@ -43,7 +43,7 @@ it('filtre par recherche et ajoute un compte au clic', async () => {
   render(<Harness />)
 
   await userEvent.type(screen.getByRole('combobox'), 'fic')
-  await userEvent.click(screen.getByRole('option', { name: /compte.fictif/ }))
+  await userEvent.click(screen.getByRole('option', { name: /compte\.fictif/ }))
 
   expect(screen.getByRole('button', { name: 'Retirer @compte.fictif' })).toBeInTheDocument()
 })
@@ -68,6 +68,9 @@ it('empêche de choisir un compte déjà présent dans l’autre liste', async (
   await userEvent.click(screen.getByRole('combobox'))
   await userEvent.click(screen.getByRole('option', { name: /@club_basket/ }))
 
-  expect(screen.getByRole('option', { name: /@club_basket/ })).toHaveAttribute('aria-disabled', 'true')
+  expect(screen.getByRole('option', { name: /@club_basket/ })).toHaveAttribute(
+    'aria-disabled',
+    'true',
+  )
   expect(screen.queryByRole('button', { name: 'Retirer @club_basket' })).not.toBeInTheDocument()
 })

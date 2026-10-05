@@ -1,5 +1,8 @@
 # Instagram Unlike Cleaner (IUC)
 
+[![CI](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/actions/workflows/ci.yml)
+· Licence MIT · Python 3.11+ · Node.js 22+
+
 Outil local et gratuit pour retirer en masse ses « J’aime » Instagram, en gardant la main sur
 chaque étape : tu choisis les critères, tu vérifies la liste, IUC retire les likes par lots,
 avec des pauses et une limite par jour. Tout reste sur ton ordinateur.
@@ -31,6 +34,22 @@ avec des pauses et une limite par jour. Tout reste sur ton ordinateur.
 
 L’interface web (React) est servie par une API locale (FastAPI) ; une CLI (`iuc`) offre les
 mêmes fonctions. Un seul navigateur, piloté par Playwright, parle à Instagram.
+
+![Démonstration du parcours, avec des données fictives](docs/images/demo.gif)
+
+## Captures
+
+Toutes les captures utilisent des comptes fictifs (`scripts/demo.py`).
+
+| Critères et liste de tes comptes | Aperçu à cocher |
+| --- | --- |
+| ![Critères du nettoyage](docs/images/criteres.png) | ![Aperçu du nettoyage](docs/images/apercu.png) |
+| **Suivi en direct** | **Rapport final** |
+| ![Suivi d'un nettoyage en pause](docs/images/suivi.png) | ![Rapport d'un nettoyage terminé](docs/images/rapport.png) |
+
+| Page d’accueil | Mobile, thème sombre |
+| --- | --- |
+| ![Page d'accueil](docs/images/accueil.png) | ![Aperçu sur mobile en thème sombre](docs/images/mobile-sombre.png) |
 
 ## Sécurité et confidentialité
 
@@ -95,6 +114,15 @@ La même chose en ligne de commande :
 | `iuc probe` | Explore la page des likes sans rien retirer (diagnostics) |
 | `iuc logout` / `iuc purge` | Supprime la session Instagram / toutes les données locales |
 
+### Essayer l’interface sans compte Instagram
+
+```bash
+python scripts/demo.py
+```
+
+Ouvre `http://127.0.0.1:8799` : trois nettoyages fictifs (terminé, en pause, prêt) dans un
+dossier `demo-data/` séparé. Tes vraies données ne sont jamais touchées.
+
 ## Configuration
 
 | Variable | Défaut | Rôle |
@@ -107,11 +135,38 @@ La même chose en ligne de commande :
 | `API_PORT` | `8765` | Port de l’API locale (toujours sur 127.0.0.1) |
 | `API_DOCS` | `false` | Page `/docs` de l’API, chargée depuis un CDN : à n’activer qu’en développement |
 
+## Questions fréquentes
+
+**Dois-je donner mon mot de passe ?** Non. Tu te connectes toi-même dans la fenêtre Chromium ;
+IUC ne lit aucun champ du formulaire et vérifie seulement que la session est ouverte.
+
+**Mon compte risque-t-il quelque chose ?** Instagram n’autorise pas l’automatisation. IUC limite
+la cadence et s’arrête au moindre signal, mais le risque zéro n’existe pas : commence par un
+compte secondaire.
+
+**Combien de temps faut-il ?** Environ une minute pour vingt-cinq likes. Au-delà de la limite
+quotidienne (150 par défaut), le nettoyage reprend le lendemain là où il s’était arrêté.
+
+**Que se passe-t-il si Instagram me déconnecte ou demande une vérification ?** Le nettoyage
+s’arrête aussitôt et passe en pause. Règle la situation toi-même dans la fenêtre, puis reprends :
+rien n’est retraité.
+
+**Et si Instagram change son interface ?** IUC vérifie au démarrage chaque élément dont il a
+besoin et nomme celui qui manque, sans rien retirer. Les sélecteurs sont réunis dans un seul
+fichier pour faciliter la mise à jour (voir [CONTRIBUTING.md](CONTRIBUTING.md)).
+
+**Où sont mes données ?** Dans `DATA_DIR` (par défaut `./data`), sur ton ordinateur. `iuc purge`
+ou le bouton « Supprimer mes données locales » efface tout.
+
+**IUC est-il lié à Instagram ?** Non, c’est un projet indépendant, sans lien avec Instagram ni
+Meta.
+
 ## Développement
 
 ```bash
+pre-commit install                  # contrôles automatiques avant chaque commit
 pytest                              # backend ; -m "not browser" pour sauter les tests Chromium
-ruff check backend && ruff format --check backend && mypy
+ruff check backend scripts && ruff format --check backend scripts && mypy
 pip-audit                           # vulnérabilités connues des dépendances Python
 cd frontend
 npm test && npm run lint && npm run typecheck && npm run format:check
@@ -120,8 +175,20 @@ npm run dev                         # interface en développement (API : iuc ser
 npm run api                         # régénère les types du client après un changement d'API
 ```
 
+### Tests et qualité
+
+| Niveau | Cible | Outil |
+| --- | --- | --- |
+| Unitaires | Filtres, limites quotidiennes, pauses aléatoires, machine d’états d’un nettoyage | pytest |
+| Intégration | API et base SQLite, reprise après un arrêt | pytest, httpx |
+| Automatisation | Navigation, sélection et retrait sur une fausse page des likes, réseau coupé | Playwright |
+| Frontend | Composants et parcours principal | Vitest, Testing Library |
+| Manuel | Un lot réel de quelques dizaines de likes sur un compte de test | [Recette](docs/recette.md) |
+
 Les tests d’automatisation tournent sur une fausse page des likes, sans aucun accès au réseau
 (`backend/tests/fake_instagram.py`) : on ne teste jamais sur le vrai Instagram en continu.
+L’intégration continue (GitHub Actions) lance le lint, le typage, tous les tests et les audits
+à chaque envoi sur `main` ou `dev`, avec Python 3.11 et 3.14.
 
 Mise à jour des dépendances Python : `pip install -U <paquet>`, tests verts, `pip-audit`, puis
 `pip freeze --exclude-editable` dans `constraints.txt` (en gardant son en-tête).
@@ -137,4 +204,12 @@ backend/app/
   cli.py      commandes `iuc`
 backend/tests/  tests, dont la fausse version d'Instagram
 frontend/       interface React (Vite, TypeScript, Tailwind)
+scripts/        démonstration avec des données fictives
+docs/           recette manuelle, images du README
 ```
+
+## Contribuer, sécurité et licence
+
+- Contributions : voir [CONTRIBUTING.md](CONTRIBUTING.md).
+- Vulnérabilité : signalement privé, voir [SECURITY.md](SECURITY.md).
+- Licence : [MIT](LICENSE). Instagram est une marque de Meta Platforms, Inc.
