@@ -116,7 +116,7 @@ def export_csv(items: list[LikedItem], path: Path) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8-sig", newline="") as file:
         writer = csv.writer(file, delimiter=";")
-        writer.writerow(["rang", "auteur", "type", "publiée le", "identifiant"])
+        writer.writerow(["rang", "auteur", "type", "partagée le (selon Instagram)", "identifiant"])
         for item in items:
             writer.writerow(
                 [

@@ -4,6 +4,7 @@ import json
 import time
 from dataclasses import asdict, dataclass
 from datetime import date, timedelta
+from typing import Any
 from urllib.parse import urlparse
 
 from playwright.async_api import BrowserContext, Route
@@ -107,6 +108,13 @@ function thumbnail(item, index, total) {
     : '';
   element.innerHTML = '<img alt="" src="https://instagram.fcdg3-1.fna.fbcdn.net/v/t51.82787-15/'
     + item.key + '.jpg?stp=dst-jpg&oh=signature&oe=ABC">' + icon;
+  element.dataset.key = item.key;
+  element.onclick = () => {
+    if (!selecting) { location.href = '/p/ouvert/'; return; }
+    if (checked.has(item.key)) checked.delete(item.key); else checked.add(item.key);
+    refreshSelection();
+  };
+  if (selecting) element.insertAdjacentHTML('beforeend', checkbox(item.key));
   return element;
 }
 function loadBatch() {
@@ -173,6 +181,78 @@ document.getElementById('filters').onclick = () => {
     setTimeout(render, 100);
   };
 };
+// Mode sélection, comme observé : « Sélectionner » devient « Annuler », une case par
+// vignette (icône cercle vide ou coché), compteur « N sélectionnés » et bouton grisé.
+const CONFIRM = '__CONFIRM__';  // confirm : fenêtre attendue ; unknown : fenêtre inconnue ; none
+const UNLIKE = '__UNLIKE__';  // ok, blocked, silent (rien ne se passe), revert (réapparaît)
+let selecting = false;
+const checked = new Set();
+const selectToggle = document.getElementById('select');
+function checkbox(key) {
+  const icon = checked.has(key) ? 'circle-check__filled__24' : 'circle__outline__24';
+  return '<div role="button" aria-label="Activer la case à cocher" class="box"><div style="'
+    + 'mask-image: url(&quot;https://i.instagram.com/static/images/bloks/icons/generated/'
+    + icon + '-4x.png&quot;);"></div></div>';
+}
+function refreshSelection() {
+  grid.querySelectorAll('[data-key]').forEach(element => {
+    const box = element.querySelector('.box');
+    if (box) box.outerHTML = checkbox(element.dataset.key);
+  });
+  document.getElementById('counter').textContent = `${checked.size} sélectionnés`;
+  document.getElementById('unlike').disabled = checked.size === 0;
+}
+selectToggle.onclick = () => {
+  if (selecting) {
+    selecting = false;
+    checked.clear();
+    selectToggle.textContent = 'Sélectionner';
+    document.getElementById('bar').remove();
+    grid.querySelectorAll('.box').forEach(box => box.remove());
+    return;
+  }
+  selecting = true;
+  selectToggle.textContent = 'Annuler';
+  selectToggle.insertAdjacentHTML('afterend', '<span id="bar"><span id="counter"></span>'
+    + '<button id="unlike" disabled>Je n’aime plus</button></span>');
+  document.getElementById('unlike').onclick = onUnlike;
+  grid.querySelectorAll('[data-key]').forEach(element => {
+    element.insertAdjacentHTML('beforeend', checkbox(element.dataset.key));
+  });
+  refreshSelection();
+};
+function onUnlike() {
+  const keys = [...checked];
+  if (CONFIRM === 'none') { perform(keys); return; }
+  const dialog = document.createElement('div');
+  dialog.setAttribute('role', 'dialog');
+  dialog.innerHTML = CONFIRM === 'unknown'
+    ? '<div>Supprimer ces interactions ?</div><button id="ok">Supprimer</button>'
+      + '<button id="no">Annuler</button>'
+    : '<div>Ne plus aimer les publications ?</div><div>Voulez-vous vraiment ne plus aimer '
+      + 'ces publications ?</div><button id="ok">Je n’aime plus</button>'
+      + '<button id="no">Annuler</button>';
+  document.body.appendChild(dialog);
+  document.getElementById('ok').onclick = () => { dialog.remove(); perform(keys); };
+  document.getElementById('no').onclick = () => dialog.remove();
+}
+function perform(keys) {
+  if (UNLIKE === 'blocked') {
+    document.body.insertAdjacentHTML('beforeend', '<div role="dialog">Réessayer plus tard. '
+      + 'Nous limitons la fréquence de certaines actions.<button>OK</button></div>');
+    return;
+  }
+  if (UNLIKE === 'silent') return;
+  if (UNLIKE === 'ok') fetch('/__unlike__/' + keys.join(','));
+  setTimeout(() => {
+    const removedShown = visible.slice(0, shown).filter(item => keys.includes(item.key)).length;
+    visible = visible.filter(item => !keys.includes(item.key));
+    shown -= removedShown;
+    keys.forEach(key => grid.querySelector(`[data-key="${key}"]`)?.remove());
+    checked.clear();
+    refreshSelection();
+  }, 300);
+}
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape') document.querySelectorAll('[role="dialog"]').forEach(d => d.remove());
 });
@@ -186,15 +266,33 @@ render();
 """
 
 
-def interactive_likes_page(likes: list[FakeLike], *, blocking_dialog_after_ms: int = -1) -> str:
-    """Page des likes interactive. `blocking_dialog_after_ms` ouvre, après ce délai, la
-    fenêtre « Enregistrer vos informations de connexion ? » par-dessus la page."""
-    script = _LIKES_PAGE_SCRIPT.replace(
-        "__DATA__", json.dumps([asdict(like) for like in likes], ensure_ascii=False)
-    ).replace("__BLOCKING_AFTER_MS__", str(blocking_dialog_after_ms))
+def interactive_likes_page(
+    likes: list[FakeLike],
+    *,
+    blocking_dialog_after_ms: int = -1,
+    confirm: str = "confirm",
+    unlike: str = "ok",
+) -> str:
+    """Page des likes interactive.
+
+    `blocking_dialog_after_ms` ouvre, après ce délai, la fenêtre « Enregistrer vos
+    informations de connexion ? ». `confirm` choisit la fenêtre qui suit « Je n’aime plus »
+    (confirm, unknown ou none) et `unlike` ce qui se passe ensuite : ok (retrait signalé au
+    faux serveur), blocked (« Réessayer plus tard »), silent (rien) ou revert (retrait affiché
+    mais pas enregistré : le like réapparaît au rechargement).
+    """
+    script = (
+        _LIKES_PAGE_SCRIPT.replace(
+            "__DATA__", json.dumps([asdict(like) for like in likes], ensure_ascii=False)
+        )
+        .replace("__BLOCKING_AFTER_MS__", str(blocking_dialog_after_ms))
+        .replace("__CONFIRM__", confirm)
+        .replace("__UNLIKE__", unlike)
+    )
     return html(
         "<span id='sort-label'>Du plus récent au plus ancien</span>"
-        "<div role='button' id='filters'>Trier et filtrer</div><span>Sélectionner</span>"
+        "<div role='button' id='filters'>Trier et filtrer</div>"
+        "<span id='select'>Sélectionner</span>"
         "<div id='grid' style='width:400px;height:400px;overflow-y:auto;'></div>",
         script,
     )
@@ -230,9 +328,23 @@ class FakeInstagram:
     def __init__(self) -> None:
         self.offline = False
         self.requested_paths: list[str] = []
+        self.unliked: list[str] = []
+        self._likes: list[FakeLike] | None = None
+        self._likes_options: dict[str, Any] = {}
         self._pages: dict[str, tuple[int, str, dict[str, str]]] = {
             "/": (200, html("<h1>Accueil</h1>"), {}),
         }
+
+    def serve_likes(self, likes: list[FakeLike], **options: Any) -> None:
+        """Sert la page des likes à partir d'un compte en mémoire : un like retiré par la
+        page (/__unlike__/) disparaît aussi des chargements suivants."""
+        self._likes = list(likes)
+        self._likes_options = options
+
+    def delete_like(self, key: str) -> None:
+        """Simule une publication supprimée par son auteur depuis l'aperçu."""
+        assert self._likes is not None
+        self._likes = [like for like in self._likes if like.key != key]
 
     def page(self, path: str, body: str) -> None:
         self._pages[path] = (200, body, {})
@@ -261,6 +373,14 @@ class FakeInstagram:
             return
         path = urlparse(route.request.url).path
         self.requested_paths.append(path)
+        if path.startswith("/__unlike__/") and self._likes is not None:
+            keys = path.removeprefix("/__unlike__/").split(",")
+            self.unliked.extend(keys)
+            self._likes = [like for like in self._likes if like.key not in keys]
+        if path == locators.LIKES_PATH and self._likes is not None:
+            body = interactive_likes_page(self._likes, **self._likes_options)
+            await route.fulfill(status=200, body=body, content_type="text/html; charset=utf-8")
+            return
         status, body, headers = self._pages.get(path, (404, html("introuvable"), {}))
         await route.fulfill(
             status=status, headers=headers, body=body, content_type="text/html; charset=utf-8"

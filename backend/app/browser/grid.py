@@ -144,6 +144,7 @@ async def load_grid(
     *,
     idle_rounds: int = 3,
     max_items: int | None = None,
+    stop_when: Callable[[dict[str, Thumbnail]], bool] | None = None,
     on_progress: Callable[[int], None] | None = None,
 ) -> list[Thumbnail]:
     """Fait défiler la grille jusqu'au bout et renvoie toutes les vignettes, dans l'ordre.
@@ -151,18 +152,21 @@ async def load_grid(
     Les vignettes sont relues à chaque tour et cumulées par clé, ce qui fonctionne même si
     Instagram retire du DOM celles qui sortent de l'écran. La collecte s'arrête quand plus
     rien n'arrive pendant `idle_rounds` tours (trois fois plus si « Chargement... » reste
-    affiché), ou dès que `max_items` vignettes sont lues.
+    affiché), dès que `max_items` vignettes sont lues, ou dès que `stop_when` renvoie vrai
+    pour les vignettes déjà lues.
     """
     collected: dict[str, Thumbnail] = {}
     idle = 0
     while True:
-        await _ensure_collectable(page)
+        await ensure_collectable(page)
         before = len(collected)
         for thumbnail in await read_thumbnails(page):
             collected.setdefault(thumbnail.media_key, thumbnail)
         if on_progress is not None:
             on_progress(len(collected))
         if max_items is not None and len(collected) >= max_items:
+            break
+        if stop_when is not None and stop_when(collected):
             break
         idle = idle + 1 if len(collected) == before else 0
         still_loading = await locators.loading_indicator(page).is_visible()
@@ -171,11 +175,14 @@ async def load_grid(
         await _scroll_to_end(page)
         await asyncio.sleep(SCROLL_PAUSE)
     thumbnails = list(collected.values())
-    logger.info("Grille lue : %d vignettes", len(thumbnails))
+    # Niveau DEBUG : la CLI et le journal en base affichent déjà ce total, et une ligne en
+    # console couperait la progression affichée sur une seule ligne.
+    logger.debug("Grille lue : %d vignettes", len(thumbnails))
     return thumbnails[:max_items] if max_items is not None else thumbnails
 
 
-async def _ensure_collectable(page: Page) -> None:
+async def ensure_collectable(page: Page) -> None:
+    """Lève GridInterrupted si la page des likes a été quittée ou est recouverte."""
     kind = locators.classify_path(urlparse(page.url).path)
     if kind is not PageKind.LIKES:
         raise GridInterrupted(f"la page des likes a été quittée ({kind})")

@@ -129,7 +129,7 @@ def test_export_csv_is_readable_by_excel(tmp_path: Path) -> None:
     with path.open(encoding="utf-8-sig", newline="") as file:
         rows = list(csv.reader(file, delimiter=";"))
     assert rows == [
-        ["rang", "auteur", "type", "publiée le", "identifiant"],
+        ["rang", "auteur", "type", "partagée le (selon Instagram)", "identifiant"],
         ["1", "@auteur_a", "vidéo", "03/10/2026", "0_1_1_n"],
         ["5", "", "carrousel", "03/10/2026", "4_1_1_n"],
     ]

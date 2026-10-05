@@ -5,6 +5,7 @@ from typing import Annotated
 
 import typer
 from pydantic import ValidationError
+from sqlalchemy import Engine
 
 from app.browser.probe import ProbeError, run_probe
 from app.browser.session import (
@@ -18,6 +19,17 @@ from app.core.config import Settings, get_settings
 from app.core.db import OutdatedSchemaError, init_db, make_engine
 from app.core.logs import setup_logging
 from app.models.schemas import CleanupFilters, ContentFilter, SortOrder
+from app.models.tables import ItemStatus
+from app.services.cleanup import STOP_MESSAGES, run_cleanup, today_count
+from app.services.jobs import (
+    RUNNABLE,
+    STATUS_LABELS,
+    JobActionRefused,
+    JobOverview,
+    job_overview,
+    list_jobs,
+    set_excluded,
+)
 from app.services.preview import (
     PreviewError,
     export_csv,
@@ -146,15 +158,7 @@ def preview(
         typer.echo(f"Critères invalides : {messages}", err=True)
         raise typer.Exit(2) from exc
 
-    settings = get_settings()
-    settings.ensure_dirs()
-    engine = make_engine(settings.db_path)
-    try:
-        init_db(engine)
-    except OutdatedSchemaError as exc:
-        engine.dispose()
-        typer.echo(str(exc), err=True)
-        raise typer.Exit(1) from exc
+    engine = _open_database()
 
     async def collect(session: BrowserSession, settings: Settings, status: SessionStatus) -> None:
         typer.echo(
@@ -192,6 +196,150 @@ def preview(
         engine.dispose()
 
 
+@app.command()
+def jobs() -> None:
+    """Liste les nettoyages enregistrés et leur avancement."""
+    engine = _open_database()
+    try:
+        overviews = list_jobs(engine)
+        if not overviews:
+            typer.echo("Aucun nettoyage enregistré. Commence par `iuc preview`.")
+        for overview in overviews:
+            typer.echo(_describe(overview))
+        daily_limit = get_settings().daily_limit
+        typer.echo(f"Unlikes tentés aujourd'hui : {today_count(engine)} / {daily_limit}")
+    finally:
+        engine.dispose()
+
+
+@app.command()
+def exclude(
+    job_id: Annotated[int, typer.Argument(help="Numéro du nettoyage (voir `iuc jobs`).")],
+    rank: Annotated[
+        list[int] | None, typer.Option(help="Rang dans le CSV d'aperçu. Option répétable.")
+    ] = None,
+    author: Annotated[
+        list[str] | None, typer.Option(help="Tous les likes de ce compte. Option répétable.")
+    ] = None,
+    restore: Annotated[
+        bool, typer.Option(help="Remet les likes désignés dans le nettoyage.")
+    ] = False,
+) -> None:
+    """Exclut des likes de l'aperçu (ou les y remet) : ils ne seront jamais retirés."""
+    if not rank and not author:
+        typer.echo("Indique au moins un --rank ou un --author.", err=True)
+        raise typer.Exit(2)
+    engine = _open_database()
+    try:
+        changed = set_excluded(
+            engine, job_id, ranks=list(rank or ()), authors=list(author or ()), restore=restore
+        )
+    except JobActionRefused as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
+    finally:
+        engine.dispose()
+    action = "remis dans le nettoyage" if restore else "exclus"
+    typer.echo(f"{changed} likes {action} (nettoyage n°{job_id}).")
+
+
+@app.command()
+def run(
+    job_id: Annotated[int, typer.Argument(help="Numéro du nettoyage (voir `iuc jobs`).")],
+    limit: Annotated[
+        int | None,
+        typer.Option(min=1, help="Nombre maximal de likes à retirer pendant cette exécution."),
+    ] = None,
+    snapshot: Annotated[
+        bool, typer.Option(help="Enregistre un diagnostic avant et après chaque lot.")
+    ] = False,
+    yes: Annotated[bool, typer.Option("--yes", help="Ne demande pas de confirmation.")] = False,
+    timeout: TimeoutOption = 300,
+) -> None:
+    """Lance ou reprend un nettoyage : retire les likes validés de l'aperçu, par lots.
+
+    Le premier lancement valide l'aperçu. Le nettoyage passe en pause à la limite
+    quotidienne, au nombre demandé par --limit, ou au moindre signal d'Instagram.
+    """
+    settings = get_settings()
+    engine = _open_database()
+    overview = job_overview(engine, job_id)
+    if overview is None or overview.status not in RUNNABLE:
+        engine.dispose()
+        state = "inexistant" if overview is None else f"« {STATUS_LABELS[overview.status]} »"
+        typer.echo(f"Le nettoyage n°{job_id} est {state} : rien à lancer.", err=True)
+        raise typer.Exit(1)
+    planned = overview.to_process if limit is None else min(limit, overview.to_process)
+    left_today = max(settings.daily_limit - today_count(engine), 0)
+    typer.echo(_describe(overview))
+    if not yes and not typer.confirm(
+        f"Retirer jusqu'à {planned} likes maintenant (limite du jour : {left_today} restants) ? "
+        "Cette action modifie ton compte Instagram.",
+        default=False,
+    ):
+        engine.dispose()
+        typer.echo("Rien n'a été retiré.")
+        raise typer.Exit(1)
+
+    def batch_done(removed: int, total: int) -> None:
+        typer.echo(f"  Lot retiré : {removed} likes (total : {total})")
+
+    async def clean(session: BrowserSession, settings: Settings, status: SessionStatus) -> None:
+        typer.echo("Nettoyage en cours : ne clique pas dans la fenêtre. Ctrl+C pour l'interrompre.")
+        result = await run_cleanup(
+            session,
+            engine,
+            settings,
+            job_id,
+            account_id=status.account_id,
+            max_unlikes=limit,
+            snapshot=snapshot,
+            on_batch=batch_done,
+        )
+        typer.echo(STOP_MESSAGES[result.reason])
+        if result.detail:
+            typer.echo(f"  Détail : {result.detail}")
+        typer.echo(
+            f"  Retirés : {result.done} | échecs : {result.failed} | introuvables : "
+            f"{result.skipped} | restant à traiter : {result.remaining}"
+        )
+
+    try:
+        _run_in_browser(timeout, clean)
+    finally:
+        engine.dispose()
+
+
+def _open_database() -> Engine:
+    settings = get_settings()
+    settings.ensure_dirs()
+    engine = make_engine(settings.db_path)
+    try:
+        init_db(engine)
+    except OutdatedSchemaError as exc:
+        engine.dispose()
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
+    return engine
+
+
+def _describe(overview: JobOverview) -> str:
+    counts = overview.counts
+    filters = overview.filters
+    if filters.start_date or filters.end_date:
+        period = f"likes du {filters.start_date or 'début'} au {filters.end_date or 'jour'}"
+    else:
+        period = "toutes dates"
+    return (
+        f"n°{overview.id} [{STATUS_LABELS[overview.status]}] "
+        f"créé le {overview.created_at.astimezone():%d/%m/%Y %H:%M} "
+        f"({period}, contenu : {filters.content}) - à traiter {overview.to_process}, "
+        f"retirés {counts.get(ItemStatus.DONE, 0)}, échecs {counts.get(ItemStatus.FAILED, 0)}, "
+        f"exclus {counts.get(ItemStatus.EXCLUDED, 0)}, "
+        f"introuvables {counts.get(ItemStatus.SKIPPED, 0)}"
+    )
+
+
 LikesPageStep = Callable[[BrowserSession, Settings, SessionStatus], Awaitable[None]]
 
 
@@ -202,9 +350,12 @@ def _run_in_browser(timeout: int, on_likes_page: LikesPageStep) -> None:
     setup_logging(settings)
     try:
         outcome = asyncio.run(_open_likes_page(settings, timeout, on_likes_page))
-    except (BrowserStartError, ProbeError, PreviewError) as exc:
+    except (BrowserStartError, ProbeError, PreviewError, JobActionRefused) as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(1) from exc
+    except KeyboardInterrupt as exc:
+        typer.echo("Interrompu : un nettoyage en cours est passé en pause.", err=True)
+        raise typer.Exit(130) from exc
     raise typer.Exit(0 if outcome is NavigationOutcome.OK else 1)
 
 

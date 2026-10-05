@@ -186,3 +186,50 @@ def date_selects(dialog: Locator, position: int) -> tuple[Locator, Locator, Loca
 
 def apply_button(dialog: Locator) -> Locator:
     return dialog.get_by_role("button", name=_APPLY_NAME).first
+
+
+# --- Mode sélection (confirmé) ------------------------------------------------------------
+# « Sélectionner » devient « Annuler », chaque vignette reçoit une case, un compteur affiche
+# « N sélectionnés » et le bouton « Je n’aime plus » (apostrophe typographique) reste grisé
+# tant que rien n'est coché. Une case cochée ne se voit qu'à son icône (CHECKED_ICON).
+# Après le clic, Instagram demande une confirmation (confirmé le 05/10/2026) : fenêtre
+# « Ne plus aimer les publications ? Voulez-vous vraiment ne plus aimer ces publications ? »
+# avec les boutons « Je n’aime plus » et « Annuler ». Seul un bouton portant ce même nom est
+# accepté comme confirmation. Ensuite, Instagram vide puis recharge toute la grille.
+
+UNLIKE_NAME = re.compile(r"^\s*(Je n[’']aime plus|Unlike)\s*$")
+_CANCEL_TEXT = re.compile(r"^\s*(Annuler|Cancel)\s*$")
+_COUNTER_TEXT = re.compile(r"^\s*(\d+)\s+(sélectionnés?|selected)\s*$")
+# Messages d'Instagram qui signalent une limite ou une erreur : arrêt immédiat. À compléter
+# avec les textes réels dès qu'ils seront observés.
+ALERT_TEXT = re.compile(
+    r"(réessa|try again|limit|bloqu|block|restrict|erreur|error|impossible|couldn)",
+    re.IGNORECASE,
+)
+
+
+def unlike_button(page: Page) -> Locator:
+    return page.get_by_role("button", name=UNLIKE_NAME).first
+
+
+def cancel_selection(page: Page) -> Locator:
+    return page.get_by_text(_CANCEL_TEXT).first
+
+
+def selection_counter(page: Page) -> Locator:
+    return page.get_by_text(_COUNTER_TEXT).first
+
+
+def parse_counter(text: str) -> int | None:
+    match = _COUNTER_TEXT.match(text)
+    return int(match[1]) if match else None
+
+
+def thumbnail_by_media_key(page: Page, media_key: str) -> Locator:
+    """Vignette dont l'image porte ce nom de fichier."""
+    return thumbnails(page).filter(has=page.locator(f'img[src*="/{media_key}."]')).first
+
+
+def alert_messages(page: Page) -> Locator:
+    """Zones d'annonce d'Instagram (rôle « alert »), vides en temps normal (confirmé)."""
+    return page.get_by_role("alert")

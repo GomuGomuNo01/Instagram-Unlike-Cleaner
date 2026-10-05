@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from app.browser import grid, native_filters
+from app.browser import grid, native_filters, selection
 from app.browser import session as session_module
 from app.browser.session import BrowserSession
 from app.core.config import get_settings
@@ -41,6 +41,8 @@ def fast_timings(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(session_module, "DIALOG_SETTLE", 0.05)
     monkeypatch.setattr(native_filters, "SETTLE_DELAY", 0.4)
     monkeypatch.setattr(grid, "SCROLL_PAUSE", 0.25)
+    monkeypatch.setattr(selection, "CLICK_PAUSE", (0.0, 0.02))
+    monkeypatch.setattr(selection, "REMOVAL_TIMEOUT", 2.0)
 
 
 @pytest.fixture

@@ -17,9 +17,12 @@ class Settings(BaseSettings):
 
     data_dir: Path = Path("./data")
     # Valeurs prudentes provisoires, à ajuster après les tests sur le compte secondaire.
+    # Unlikes tentés par jour (date locale), tous nettoyages confondus.
     daily_limit: int = Field(default=150, ge=1)
+    # Pause tirée au hasard entre deux lots, en secondes.
     delay_min: float = Field(default=4.0, ge=0)
     delay_max: float = Field(default=12.0, ge=0)
+    # Likes retirés par lot, c'est-à-dire par clic sur « Je n’aime plus ».
     batch_size: int = Field(default=20, ge=1)
     log_level: LogLevel = "INFO"
 
