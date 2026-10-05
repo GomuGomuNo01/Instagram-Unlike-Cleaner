@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     api_cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
     # Interface compilée (`npm run build` dans frontend/), servie par l'API.
     frontend_dist: Path = Path(__file__).resolve().parents[3] / "frontend" / "dist"
+    # Page /docs de l'API (Swagger UI). Désactivée par défaut : elle charge ses fichiers
+    # depuis un serveur tiers (CDN), ce qu'IUC s'interdit. Le schéma reste disponible avec
+    # `iuc openapi`.
+    api_docs: bool = False
 
     @field_validator("log_level", mode="before")
     @classmethod

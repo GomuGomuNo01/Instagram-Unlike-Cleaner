@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import random
 import re
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -18,9 +19,9 @@ from app.models.tables import MediaKind
 
 logger = logging.getLogger(__name__)
 
-# Pause entre deux défilements : laisse à Instagram le temps de charger le paquet suivant,
-# sans enchaîner les requêtes.
-SCROLL_PAUSE = 1.5
+# Pause entre deux défilements, tirée au hasard (secondes) : laisse à Instagram le temps de
+# charger le paquet suivant, sans enchaîner les requêtes à un rythme régulier.
+SCROLL_PAUSE = (1.2, 2.2)
 
 # Les dates des libellés restent en anglais, même avec l'interface en français (confirmé).
 _MONTHS = {
@@ -49,7 +50,14 @@ _MEDIA_FILE = re.compile(r"/(?P<key>\d+_\d+_\d+_n)\.[A-Za-z0-9]+$")
 
 
 class GridInterrupted(RuntimeError):
-    """La collecte a dû s'arrêter : page quittée ou fenêtre d'Instagram ouverte par-dessus."""
+    """La collecte a dû s'arrêter : page quittée ou fenêtre d'Instagram ouverte par-dessus.
+
+    `alert` reprend le texte de la fenêtre s'il signale une limite ou une erreur.
+    """
+
+    def __init__(self, message: str, alert: str | None = None) -> None:
+        super().__init__(message)
+        self.alert = alert
 
 
 @dataclass(frozen=True)
@@ -173,7 +181,7 @@ async def load_grid(
         if idle >= (idle_rounds * 3 if still_loading else idle_rounds):
             break
         await _scroll_to_end(page)
-        await asyncio.sleep(SCROLL_PAUSE)
+        await asyncio.sleep(random.uniform(*SCROLL_PAUSE))
     thumbnails = list(collected.values())
     # Niveau DEBUG : la CLI et le journal en base affichent déjà ce total, et une ligne en
     # console couperait la progression affichée sur une seule ligne.
@@ -186,8 +194,13 @@ async def ensure_collectable(page: Page) -> None:
     kind = locators.classify_path(urlparse(page.url).path)
     if kind is not PageKind.LIKES:
         raise GridInterrupted(f"la page des likes a été quittée ({kind})")
-    if await locators.blocking_dialog(page).is_visible():
-        raise GridInterrupted("une fenêtre d'Instagram recouvre la page des likes")
+    dialog = locators.blocking_dialog(page)
+    if await dialog.is_visible():
+        text = normalize_label(await dialog.inner_text())
+        raise GridInterrupted(
+            "une fenêtre d'Instagram recouvre la page des likes",
+            alert=text if locators.ALERT_TEXT.search(text) else None,
+        )
 
 
 async def _scroll_to_end(page: Page) -> None:

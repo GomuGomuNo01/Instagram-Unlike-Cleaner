@@ -14,7 +14,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api import authors, jobs, session
-from app.api.security import TOKEN_HEADER, new_token
+from app.api.security import TOKEN_HEADER, SecurityHeadersMiddleware, new_token
 from app.api.state import ApiConflict, ApiState, BrowserFactory, BrowserManager
 from app.browser.session import BrowserSession
 from app.core.config import Settings, get_settings
@@ -59,6 +59,9 @@ def create_app(
             f"affiché par `iuc serve`, dans l'en-tête {TOKEN_HEADER}."
         ),
         lifespan=lifespan,
+        # Swagger UI se charge depuis un CDN : seulement si API_DOCS est activé.
+        docs_url="/docs" if settings.api_docs else None,
+        redoc_url=None,
     )
     app.state.iuc = state
     app.add_middleware(
@@ -67,9 +70,10 @@ def create_app(
         allow_methods=["GET", "POST", "PATCH", "DELETE"],
         allow_headers=[TOKEN_HEADER, "Content-Type"],
     )
-    # Ajouté en dernier, donc exécuté en premier : refuse tout autre en-tête Host
-    # (protection contre le « DNS rebinding »).
+    # Refuse tout autre en-tête Host (protection contre le « DNS rebinding »).
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS)
+    # Ajouté en dernier, donc exécuté en premier : même un refus porte ces en-têtes.
+    app.add_middleware(SecurityHeadersMiddleware)
 
     @app.exception_handler(ApiConflict)
     async def conflict(_request: Request, exc: ApiConflict) -> JSONResponse:

@@ -4,14 +4,22 @@ from pathlib import Path
 
 import pytest
 
-from app.browser import grid, native_filters, selection
+from app.browser import grid, layout, native_filters, selection
 from app.browser import session as session_module
 from app.browser.session import BrowserSession
 from app.core.config import get_settings
 from app.core.logs import LOGGER_NAME
 from tests.fake_instagram import NO_NETWORK_ARGS, FakeInstagram
 
-ENV_VARS = ("DATA_DIR", "DAILY_LIMIT", "DELAY_MIN", "DELAY_MAX", "BATCH_SIZE", "LOG_LEVEL")
+ENV_VARS = (
+    "DATA_DIR",
+    "DAILY_LIMIT",
+    "DELAY_MIN",
+    "DELAY_MAX",
+    "BATCH_SIZE",
+    "LOG_LEVEL",
+    "API_DOCS",
+)
 
 
 @pytest.fixture
@@ -40,9 +48,10 @@ def fast_timings(monkeypatch: pytest.MonkeyPatch) -> None:
     """Raccourcit les pauses prévues pour le vrai Instagram : la fausse page répond vite."""
     monkeypatch.setattr(session_module, "DIALOG_SETTLE", 0.05)
     monkeypatch.setattr(native_filters, "SETTLE_DELAY", 0.4)
-    monkeypatch.setattr(grid, "SCROLL_PAUSE", 0.25)
+    monkeypatch.setattr(grid, "SCROLL_PAUSE", (0.2, 0.3))
     monkeypatch.setattr(selection, "CLICK_PAUSE", (0.0, 0.02))
     monkeypatch.setattr(selection, "REMOVAL_TIMEOUT", 2.0)
+    monkeypatch.setattr(layout, "ELEMENT_WAIT_MS", 400)
 
 
 @pytest.fixture

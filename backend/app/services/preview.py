@@ -12,7 +12,8 @@ from sqlalchemy import Engine
 from sqlmodel import Session, col, select
 
 from app.browser.grid import GridInterrupted, load_grid
-from app.browser.native_filters import NativeFilterError, apply_native_filters
+from app.browser.layout import LayoutChanged
+from app.browser.native_filters import apply_native_filters
 from app.browser.session import BrowserSession
 from app.models.schemas import CleanupFilters
 from app.models.tables import ItemStatus, Job, JobStatus, LikedItem, MediaKind
@@ -58,9 +59,10 @@ async def run_preview(
     try:
         await apply_native_filters(session.page, filters)
         thumbnails = await load_grid(session.page, max_items=max_scanned, on_progress=on_progress)
-    except (GridInterrupted, NativeFilterError, PlaywrightError) as exc:
-        fail_job(engine, job_id, f"Collecte interrompue : {exc}")
-        raise PreviewError(f"Collecte interrompue : {exc}") from exc
+    except (GridInterrupted, LayoutChanged, PlaywrightError) as exc:
+        message = await _interruption_message(session, exc)
+        fail_job(engine, job_id, message)
+        raise PreviewError(message) from exc
     except asyncio.CancelledError:
         fail_job(engine, job_id, "Collecte interrompue avant la fin")
         raise
@@ -88,6 +90,19 @@ async def run_preview(
         )
         db.commit()
     return PreviewResult(job_id=job_id, scanned=len(thumbnails), targeted=len(targeted))
+
+
+async def _interruption_message(session: BrowserSession, exc: Exception) -> str:
+    """Message pour l'utilisateur : signal d'Instagram (déconnexion, vérification, limite)
+    s'il y en a un, sinon la cause technique."""
+    outcome = await session.interruption()
+    if outcome is not None:
+        return f"Collecte interrompue. {session.describe(outcome)}"
+    if isinstance(exc, GridInterrupted) and exc.alert:
+        return f"Collecte interrompue : Instagram a signalé une limite ou une erreur ({exc.alert})."
+    if isinstance(exc, LayoutChanged):
+        return f"Collecte interrompue : l'interface d'Instagram a changé ({exc})."
+    return f"Collecte interrompue : {exc}"
 
 
 def pending_items(engine: Engine, job_id: int) -> list[LikedItem]:

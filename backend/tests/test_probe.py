@@ -6,7 +6,7 @@ import pytest
 
 from app.browser import locators, probe
 from app.browser.session import BrowserSession, NavigationOutcome
-from tests.fake_instagram import LIKES_PAGE_EN, FakeInstagram, html, likes_grid, log_in
+from tests.fake_instagram import LIKES_PAGE_CHANGED, FakeInstagram, html, likes_grid, log_in
 
 pytestmark = [pytest.mark.anyio, pytest.mark.browser]
 
@@ -54,10 +54,15 @@ def labels(reports: list[Path]) -> list[str]:
     return [report.stem.split("-", 2)[2] for report in reports]
 
 
-async def open_likes(session: BrowserSession, fake_instagram: FakeInstagram, body: str) -> None:
+async def open_likes(
+    session: BrowserSession,
+    fake_instagram: FakeInstagram,
+    body: str,
+    expected: NavigationOutcome = NavigationOutcome.OK,
+) -> None:
     fake_instagram.page(locators.LIKES_PATH, body)
     await log_in(session.context)
-    assert await session.open_likes_page(timeout=5) is NavigationOutcome.OK
+    assert await session.open_likes_page(timeout=5) is expected
 
 
 async def test_probe_explores_filters_and_selection_without_unliking(
@@ -94,8 +99,9 @@ async def test_probe_leaves_the_page_reloaded_and_unselected(
 async def test_probe_skips_missing_elements(
     session: BrowserSession, fake_instagram: FakeInstagram, tmp_path: Path
 ) -> None:
-    # Page anglaise sans bouton de filtres ni vignettes : les étapes concernées sont sautées.
-    await open_likes(session, fake_instagram, LIKES_PAGE_EN)
+    # Interface modifiée, sans bouton de filtres ni vignettes : l'exploration a lieu quand
+    # même, et les étapes concernées sont sautées.
+    await open_likes(session, fake_instagram, LIKES_PAGE_CHANGED, NavigationOutcome.LAYOUT_CHANGED)
 
     reports = await probe.run_probe(session, tmp_path / "diagnostics")
 

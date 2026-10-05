@@ -25,7 +25,8 @@ from sqlalchemy import Engine
 from sqlmodel import Session, col, func, select
 
 from app.browser.grid import GridInterrupted, Thumbnail, load_grid
-from app.browser.native_filters import NativeFilterError, apply_native_filters
+from app.browser.layout import LayoutChanged
+from app.browser.native_filters import apply_native_filters
 from app.browser.selection import (
     SelectionError,
     UnlikeOutcome,
@@ -33,7 +34,7 @@ from app.browser.selection import (
     select_batch,
     unlike_selected,
 )
-from app.browser.session import OUTCOME_MESSAGES, BrowserSession, NavigationOutcome
+from app.browser.session import BrowserSession, NavigationOutcome
 from app.core.config import Settings
 from app.models.columns import utcnow
 from app.models.schemas import CleanupFilters
@@ -57,6 +58,9 @@ class StopReason(StrEnum):
     SELECTION_MISMATCH = "selection_mismatch"
     NOT_REMOVED = "not_removed"
     PAGE_UNAVAILABLE = "page_unavailable"
+    LOGGED_OUT = "logged_out"
+    CHALLENGE = "challenge"
+    LAYOUT_CHANGED = "layout_changed"
     USER_PAUSE = "user_pause"
     USER_STOP = "user_stop"
 
@@ -88,6 +92,18 @@ STOP_MESSAGES: dict[StopReason, str] = {
         "échec et le nettoyage est en pause. Un diagnostic a été enregistré."
     ),
     StopReason.PAGE_UNAVAILABLE: "La page des likes n'est plus utilisable. Nettoyage en pause.",
+    StopReason.LOGGED_OUT: (
+        "Instagram t'a déconnecté. Nettoyage en pause : reconnecte-toi toi-même dans la "
+        "fenêtre, puis relance."
+    ),
+    StopReason.CHALLENGE: (
+        "Instagram demande une vérification de sécurité. Nettoyage en pause : termine-la "
+        "toi-même dans la fenêtre, attends quelques heures, puis relance."
+    ),
+    StopReason.LAYOUT_CHANGED: (
+        "L'interface d'Instagram a changé : un élément attendu est introuvable. Nettoyage en "
+        "pause, rien n'a été retiré dans ce lot. Un diagnostic a été enregistré."
+    ),
     StopReason.USER_PAUSE: (
         "Nettoyage mis en pause à ta demande. Relance la même commande pour continuer."
     ),
@@ -105,6 +121,12 @@ _NORMAL_STOPS = frozenset(
     }
 )
 _FINAL_STATUS = {StopReason.COMPLETED: JobStatus.COMPLETED, StopReason.USER_STOP: JobStatus.STOPPED}
+# Signaux d'Instagram lus sur la page affichée : arrêt immédiat, nettoyage en pause.
+_NAVIGATION_STOPS = {
+    NavigationOutcome.LOGIN_REQUIRED: StopReason.LOGGED_OUT,
+    NavigationOutcome.CHALLENGE: StopReason.CHALLENGE,
+    NavigationOutcome.LAYOUT_CHANGED: StopReason.LAYOUT_CHANGED,
+}
 # Repères écrits dans le journal à chaque lancement, et au lancement qui suit une exécution
 # interrompue brutalement : le rapport s'en sert pour calculer la durée active.
 RUN_STARTED_EVENT = "Exécution lancée"
@@ -220,6 +242,20 @@ async def run_cleanup(
     def stop(reason: StopReason, detail: str | None = None) -> CleanupResult:
         return _finish(engine, job_id, reason, detail, done=done, failed=failed, skipped=skipped)
 
+    async def interrupted(exc: Exception) -> CleanupResult:
+        """Arrêt sur incident : déconnexion ou vérification d'abord, puis limite signalée,
+        changement d'interface, enfin page devenue inutilisable."""
+        outcome = await session.interruption()
+        if outcome in _NAVIGATION_STOPS:
+            return stop(_NAVIGATION_STOPS[outcome], session.describe(outcome))
+        if isinstance(exc, GridInterrupted) and exc.alert:
+            return stop(StopReason.ACTION_BLOCKED, exc.alert)
+        if isinstance(exc, LayoutChanged):
+            with contextlib.suppress(PlaywrightError):
+                await diagnostic("interface")
+            return stop(StopReason.LAYOUT_CHANGED, str(exc))
+        return stop(StopReason.PAGE_UNAVAILABLE, str(exc))
+
     try:
         while True:
             limit_reason = _requested_stop(engine, job_id, control) or _limit_reached(
@@ -233,7 +269,12 @@ async def run_cleanup(
             if not first_round:
                 outcome = await session.open_likes_page()
                 if outcome is not NavigationOutcome.OK:
-                    return stop(StopReason.PAGE_UNAVAILABLE, OUTCOME_MESSAGES[outcome])
+                    if session.alert_message:
+                        return stop(StopReason.ACTION_BLOCKED, session.alert_message)
+                    reason = _NAVIGATION_STOPS.get(outcome, StopReason.PAGE_UNAVAILABLE)
+                    if reason is StopReason.LAYOUT_CHANGED:
+                        await diagnostic("interface")
+                    return stop(reason, session.describe(outcome))
             first_round = False
             await apply_native_filters(page, filters)
             if batch:
@@ -268,6 +309,10 @@ async def run_cleanup(
             if snapshot or report.outcome is not UnlikeOutcome.REMOVED:
                 await diagnostic("apres-unlike")
             if report.outcome is UnlikeOutcome.BLOCKED:
+                # Une déconnexion ou une vérification prime sur le message affiché.
+                signal = await session.interruption()
+                if signal in _NAVIGATION_STOPS:
+                    return stop(_NAVIGATION_STOPS[signal], session.describe(signal))
                 return stop(StopReason.ACTION_BLOCKED, report.message)
             if report.outcome is UnlikeOutcome.UNKNOWN_DIALOG:
                 return stop(StopReason.UNKNOWN_DIALOG, report.message)
@@ -286,8 +331,8 @@ async def run_cleanup(
     except asyncio.CancelledError:
         stop(StopReason.USER_PAUSE, "interruption immédiate, sans contrôle du dernier lot")
         raise
-    except (GridInterrupted, NativeFilterError, PlaywrightError) as exc:
-        return stop(StopReason.PAGE_UNAVAILABLE, str(exc))
+    except (GridInterrupted, LayoutChanged, PlaywrightError) as exc:
+        return await interrupted(exc)
 
 
 def today_count(engine: Engine) -> int:

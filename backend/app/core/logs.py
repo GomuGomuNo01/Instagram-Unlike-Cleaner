@@ -13,9 +13,11 @@ LOGGER_NAME = "app"
 LOG_FILE_NAME = "iuc.log"
 _FORMAT = "%(asctime)s %(levelname)-8s %(name)s : %(message)s"
 
-# Cookies de session Instagram et mots de passe : ils ne doivent jamais finir dans un journal.
+# Cookies de session Instagram, mots de passe et jeton de l'API : ils ne doivent jamais
+# finir dans un journal.
 _SECRET_PATTERN = re.compile(
-    r"(?i)\b(sessionid|csrftoken|ds_user_id|password|passwd|mot_de_passe)(\s*[=:]\s*)([^\s;,&\"']+)"
+    r"(?i)\b(sessionid|csrftoken|ds_user_id|password|passwd|mot_de_passe|token|jeton)"
+    r"(\s*[=:]\s*)([^\s;,&\"']+)"
 )
 
 

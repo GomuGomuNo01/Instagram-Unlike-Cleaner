@@ -15,7 +15,7 @@ from sqlmodel import Session
 
 from app.api.schemas import JobOut
 from app.api.state import ApiConflict, ApiState
-from app.browser.session import OUTCOME_MESSAGES, NavigationOutcome
+from app.browser.session import NavigationOutcome
 from app.models.schemas import CleanupFilters
 from app.models.tables import Job, JobStatus
 from app.services.cleanup import STOP_MESSAGES, CleanupControl, StopReason, run_cleanup
@@ -64,8 +64,8 @@ async def preview_task(
         session = state.browser.session
         outcome = await session.open_likes_page()
         if outcome is not NavigationOutcome.OK:
-            _fail_collecting_job(state, job_id, OUTCOME_MESSAGES[outcome])
-            _end(state, job_id, ok=False, message=OUTCOME_MESSAGES[outcome])
+            _fail_collecting_job(state, job_id, session.describe(outcome))
+            _end(state, job_id, ok=False, message=session.describe(outcome))
             return
         result = await run_preview(
             session,
@@ -117,7 +117,7 @@ async def cleanup_task(
         session = state.browser.session
         outcome = await session.open_likes_page()
         if outcome is not NavigationOutcome.OK:
-            _end(state, job_id, ok=False, message=OUTCOME_MESSAGES[outcome])
+            _end(state, job_id, ok=False, message=session.describe(outcome))
             return
         result = await run_cleanup(
             session,

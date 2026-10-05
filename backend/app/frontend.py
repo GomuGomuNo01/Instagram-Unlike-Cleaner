@@ -4,6 +4,10 @@ La page reçoit le jeton dans une balise <meta name="iuc-token"> : un autre site
 demander cette page, mais pas en lire le contenu (CORS), ni se faire passer pour
 127.0.0.1 (contrôle de l'hôte). Elle ne peut pas non plus être affichée dans un cadre d'un
 autre site (protection contre le « clickjacking »).
+
+Sa politique de sécurité du contenu (CSP) n'autorise que l'API locale elle-même : scripts,
+styles, polices, images et requêtes. Le navigateur refuse donc tout appel de l'interface
+vers un serveur tiers, et tout script injecté dans la page.
 """
 
 from pathlib import Path
@@ -13,11 +17,31 @@ from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 TOKEN_META = "iuc-token"
+CONTENT_SECURITY_POLICY = "; ".join(
+    [
+        "default-src 'self'",
+        "script-src 'self'",
+        "style-src 'self'",
+        "img-src 'self' data:",
+        "font-src 'self'",
+        "connect-src 'self'",
+        "object-src 'none'",
+        "base-uri 'none'",
+        "form-action 'self'",
+        "frame-ancestors 'none'",
+    ]
+)
 _PAGE_HEADERS = {
     "Cache-Control": "no-store",
-    "Content-Security-Policy": "frame-ancestors 'none'",
+    "Content-Security-Policy": CONTENT_SECURITY_POLICY,
     "X-Frame-Options": "DENY",
     "Referrer-Policy": "no-referrer",
+}
+# Page d'aide (interface non compilée) : quelques styles écrits dans la page elle-même.
+_FALLBACK_HEADERS = {
+    **_PAGE_HEADERS,
+    "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; "
+    "frame-ancestors 'none'",
 }
 _NOT_BUILT = """<!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><title>IUC</title></head>
@@ -26,7 +50,7 @@ _NOT_BUILT = """<!doctype html>
 <p>L'API fonctionne, mais l'interface n'a pas encore été compilée. Dans le dossier
 <code>frontend</code>, lance <code>npm install</code> puis <code>npm run build</code>,
 et relance <code>iuc serve</code>.</p>
-<p>La documentation de l'API est disponible sur <a href="/docs">/docs</a>.</p>
+<p>Le schéma de l'API s'exporte avec <code>iuc openapi schema.json</code>.</p>
 </body></html>"""
 
 
@@ -47,7 +71,7 @@ def mount_frontend(app: FastAPI, dist: Path, token: str) -> None:
             return FileResponse(file)  # favicon, icônes...
         index = dist / "index.html"
         if not index.is_file():
-            return HTMLResponse(_NOT_BUILT, status.HTTP_503_SERVICE_UNAVAILABLE, _PAGE_HEADERS)
+            return HTMLResponse(_NOT_BUILT, status.HTTP_503_SERVICE_UNAVAILABLE, _FALLBACK_HEADERS)
         page = index.read_text(encoding="utf-8").replace(
             "</head>", f'<meta name="{TOKEN_META}" content="{token}" />\n</head>', 1
         )

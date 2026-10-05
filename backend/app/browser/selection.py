@@ -15,9 +15,11 @@ from enum import StrEnum
 
 from playwright.async_api import Error as PlaywrightError
 from playwright.async_api import Page
+from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 
 from app.browser import locators
 from app.browser.grid import normalize_label, read_thumbnails
+from app.browser.layout import LayoutChanged, layout_message
 
 logger = logging.getLogger(__name__)
 
@@ -48,8 +50,17 @@ class UnlikeReport:
 
 
 async def enter_selection_mode(page: Page) -> None:
-    await locators.select_toggle(page).click(timeout=TIMEOUT_MS)
-    await locators.unlike_button(page).wait_for(state="visible", timeout=TIMEOUT_MS)
+    """Passe la grille en mode sélection. LayoutChanged nomme l'élément introuvable."""
+    try:
+        await locators.select_toggle(page).click(timeout=TIMEOUT_MS)
+    except PlaywrightTimeoutError as exc:
+        raise LayoutChanged(layout_message(["texte « Sélectionner »"])) from exc
+    try:
+        await locators.unlike_button(page).wait_for(state="visible", timeout=TIMEOUT_MS)
+    except PlaywrightTimeoutError as exc:
+        raise LayoutChanged(
+            layout_message(["bouton « Je n’aime plus » du mode sélection"])
+        ) from exc
 
 
 async def select_batch(page: Page, media_keys: list[str]) -> None:

@@ -182,6 +182,35 @@ async def test_detects_unknown_layout_on_likes_page(
     assert await session.open_likes_page(timeout=0.5) is NavigationOutcome.LAYOUT_CHANGED
 
 
+@pytest.mark.parametrize(
+    ("body", "missing"),
+    [
+        # « Sélectionner » a disparu, mais « Trier et filtrer » est là.
+        (html("<div role='button'>Trier et filtrer</div>"), "Sélectionner"),
+        # Les vignettes n'ont plus le libellé attendu (type, auteur).
+        (
+            html(
+                "<div role='button'>Trier et filtrer</div><span>Sélectionner</span>"
+                "<div role='button' aria-label='Publication aimée'><img alt='' "
+                "src='https://scontent.cdninstagram.com/v/123_456_789_n.jpg'></div>"
+            ),
+            "libellé des vignettes",
+        ),
+    ],
+    ids=["element-absent", "vignettes-illisibles"],
+)
+async def test_startup_check_names_the_missing_element(
+    session: BrowserSession, fake_instagram: FakeInstagram, body: str, missing: str
+) -> None:
+    fake_instagram.page(locators.LIKES_PATH, body)
+    await log_in(session.context)
+
+    outcome = await session.open_likes_page(timeout=3)
+
+    assert outcome is NavigationOutcome.LAYOUT_CHANGED
+    assert missing in session.describe(outcome)
+
+
 async def test_detects_unreachable_instagram(
     session: BrowserSession, fake_instagram: FakeInstagram
 ) -> None:

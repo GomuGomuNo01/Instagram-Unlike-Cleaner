@@ -17,7 +17,6 @@ from sqlalchemy import Engine
 from app.api.security import TOKEN_HEADER, new_token
 from app.browser.probe import ProbeError, run_probe
 from app.browser.session import (
-    OUTCOME_MESSAGES,
     BrowserSession,
     BrowserStartError,
     NavigationOutcome,
@@ -89,7 +88,7 @@ def serve(
         bool, typer.Option("--open/--no-open", help="Ouvre l'interface dans le navigateur.")
     ] = True,
 ) -> None:
-    """Lance l'API locale et l'interface, sur 127.0.0.1 uniquement (API documentée sur /docs)."""
+    """Lance l'API locale et l'interface, sur 127.0.0.1 uniquement."""
     settings = get_settings()
     settings.ensure_dirs()
     setup_logging(settings)
@@ -97,7 +96,9 @@ def serve(
     token = new_token()
     api = create_app(settings, token=token)
     url = f"http://127.0.0.1:{port}"
-    typer.echo(f"Interface : {url}  (API documentée sur {url}/docs)")
+    typer.echo(f"Interface : {url}")
+    if settings.api_docs:
+        typer.echo(f"Documentation de l'API : {url}/docs (chargée depuis un CDN)")
     typer.echo(f"Jeton de l'API (en-tête {TOKEN_HEADER}) : {token}")
     typer.echo("Ctrl+C pour arrêter le serveur : un nettoyage en cours passe en pause.")
     # Journal d'accès désactivé : il afficherait le jeton passé dans l'URL du flux SSE.
@@ -183,7 +184,8 @@ def probe(timeout: TimeoutOption = 300) -> None:
         for report in reports:
             typer.echo(f"  {report}")
 
-    _run_in_browser(timeout, explore)
+    # L'exploration sert justement à étudier une interface d'Instagram qui a changé.
+    _run_in_browser(timeout, explore, explore_changed_layout=True)
 
 
 @app.command()
@@ -579,13 +581,20 @@ def _describe(overview: JobOverview) -> str:
 LikesPageStep = Callable[[BrowserSession, Settings, SessionStatus], Awaitable[None]]
 
 
-def _run_in_browser(timeout: int, on_likes_page: LikesPageStep) -> None:
-    """Ouvre le navigateur, attend la connexion, ouvre la page des likes puis lance l'étape."""
+def _run_in_browser(
+    timeout: int, on_likes_page: LikesPageStep, *, explore_changed_layout: bool = False
+) -> None:
+    """Ouvre le navigateur, attend la connexion, ouvre la page des likes puis lance l'étape.
+
+    `explore_changed_layout` : lance aussi l'étape si l'interface d'Instagram a changé.
+    """
     settings = get_settings()
     settings.ensure_dirs()
     setup_logging(settings)
     try:
-        outcome = asyncio.run(_open_likes_page(settings, timeout, on_likes_page))
+        outcome = asyncio.run(
+            _open_likes_page(settings, timeout, on_likes_page, explore_changed_layout)
+        )
     except (BrowserStartError, ProbeError, PreviewError, JobActionRefused) as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(1) from exc
@@ -596,7 +605,10 @@ def _run_in_browser(timeout: int, on_likes_page: LikesPageStep) -> None:
 
 
 async def _open_likes_page(
-    settings: Settings, timeout: int, on_likes_page: LikesPageStep
+    settings: Settings,
+    timeout: int,
+    on_likes_page: LikesPageStep,
+    explore_changed_layout: bool,
 ) -> NavigationOutcome | None:
     async with BrowserSession(settings.browser_profile_dir) as session:
         await session.open_home()
@@ -613,10 +625,11 @@ async def _open_likes_page(
         typer.echo(f"Connecté (identifiant du compte : {status.account_id or 'inconnu'}).")
 
         outcome = await session.open_likes_page()
-        typer.echo(OUTCOME_MESSAGES[outcome])
-        if outcome is NavigationOutcome.OK:
+        typer.echo(session.describe(outcome))
+        layout_changed = outcome is NavigationOutcome.LAYOUT_CHANGED
+        if outcome is NavigationOutcome.OK or (layout_changed and explore_changed_layout):
             await on_likes_page(session, settings, status)
-        elif outcome is NavigationOutcome.LAYOUT_CHANGED:
+        elif layout_changed:
             report = await session.save_diagnostic(settings.diagnostics_dir, "likes")
             typer.echo(f"Diagnostic : {report}")
         if session.is_open:

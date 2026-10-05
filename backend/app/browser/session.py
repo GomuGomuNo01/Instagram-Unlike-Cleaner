@@ -1,7 +1,9 @@
 """Session navigateur : Chromium visible au profil persistant, connexion manuelle, navigation.
 
 Le script ne lit ni ne remplit aucun champ de connexion : l'utilisateur se connecte lui-même
-dans la fenêtre, et la connexion est détectée par la présence du cookie de session.
+dans la fenêtre, et la connexion est détectée par la présence du cookie de session. Chromium
+n'enregistre aucun identifiant et les diagnostics n'en contiennent jamais (voir
+`app/core/privacy.py`).
 """
 
 import asyncio
@@ -22,7 +24,9 @@ from playwright.async_api import Error as PlaywrightError
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 
 from app.browser import locators
+from app.browser.layout import layout_message, missing_on_likes_page
 from app.browser.locators import PageKind
+from app.core.privacy import SECRET_FIELD_SELECTOR, disable_credential_saving, redact_form_values
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +93,9 @@ OUTCOME_MESSAGES: dict[NavigationOutcome, str] = {
     NavigationOutcome.UNREACHABLE: "Instagram est injoignable. Vérifie ta connexion Internet.",
 }
 
+# Pages où l'utilisateur saisit ses identifiants ou un code : aucun diagnostic détaillé.
+_PRIVATE_PAGES = frozenset({PageKind.LOGIN, PageKind.CHALLENGE})
+
 # Pages sur lesquelles l'utilisateur doit agir lui-même : on s'arrête dès qu'on y arrive.
 _STOP_PAGES: dict[PageKind, NavigationOutcome] = {
     PageKind.LOGIN: NavigationOutcome.LOGIN_REQUIRED,
@@ -134,6 +141,8 @@ class BrowserSession:
         self._context: BrowserContext | None = None
         self._page: Page | None = None
         self._closed_by_user = False
+        self._layout_issue: str | None = None
+        self._dialog_text: str | None = None
 
     async def __aenter__(self) -> Self:
         await self.start()
@@ -170,6 +179,7 @@ class BrowserSession:
     async def start(self) -> None:
         """Lance Chromium avec le profil persistant, sans ouvrir de page Instagram."""
         self._profile_dir.mkdir(parents=True, exist_ok=True)
+        disable_credential_saving(self._profile_dir)
         self._playwright = await async_playwright().start()
         try:
             self._context = await self._playwright.chromium.launch_persistent_context(
@@ -240,8 +250,37 @@ class BrowserSession:
             logger.info("Connexion détectée")
         return status
 
+    @property
+    def alert_message(self) -> str | None:
+        """Texte de la fenêtre qui recouvrait la page des likes au dernier chargement, s'il
+        signale une limite ou une erreur d'Instagram (« Réessayer plus tard »...)."""
+        text = self._dialog_text
+        return text if text and locators.ALERT_TEXT.search(text) else None
+
+    def describe(self, outcome: NavigationOutcome) -> str:
+        """Message pour l'utilisateur, avec l'élément manquant si l'interface a changé."""
+        message = OUTCOME_MESSAGES[outcome]
+        if outcome is NavigationOutcome.LAYOUT_CHANGED and self._layout_issue:
+            message += f" Détail : {self._layout_issue}."
+        return message
+
+    async def interruption(self) -> NavigationOutcome | None:
+        """Raison pour laquelle Instagram a interrompu le travail en cours, s'il l'a fait :
+        déconnexion forcée, vérification de sécurité ou écran de consentement."""
+        try:
+            kind = self.page_kind
+            if kind in _STOP_PAGES:
+                return _STOP_PAGES[kind]
+            if not (await self.status()).logged_in:
+                return NavigationOutcome.LOGIN_REQUIRED
+        except (PlaywrightError, RuntimeError):
+            return NavigationOutcome.UNREACHABLE  # fenêtre fermée ou navigateur arrêté
+        return None
+
     async def open_likes_page(self, timeout: float = 20.0) -> NavigationOutcome:
-        """Ouvre la page des likes et vérifie qu'elle a la structure attendue."""
+        """Ouvre la page des likes et vérifie que chaque élément attendu est présent."""
+        self._layout_issue = None
+        self._dialog_text = None
         try:
             await self.page.goto(locators.LIKES_URL, wait_until="domcontentloaded")
         except PlaywrightTimeoutError:
@@ -262,17 +301,24 @@ class BrowserSession:
             if kind is PageKind.LIKES and await marker.is_visible():
                 # Le repère peut être présent sous une fenêtre qui empêche tout clic.
                 await asyncio.sleep(DIALOG_SETTLE)
-                if await locators.blocking_dialog(self.page).is_visible():
+                dialog = locators.blocking_dialog(self.page)
+                if await dialog.is_visible():
+                    self._dialog_text = " ".join((await dialog.inner_text()).split())
                     outcome = NavigationOutcome.BLOCKING_DIALOG
+                elif missing := await missing_on_likes_page(self.page):
+                    self._layout_issue = layout_message(missing)
+                    outcome = NavigationOutcome.LAYOUT_CHANGED
                 else:
                     outcome = NavigationOutcome.OK
                 break
             if time.monotonic() >= deadline:
-                outcome = (
-                    NavigationOutcome.LAYOUT_CHANGED
-                    if kind is PageKind.LIKES
-                    else NavigationOutcome.UNEXPECTED_PAGE
-                )
+                if kind is PageKind.LIKES:
+                    self._layout_issue = layout_message(
+                        ["bouton « Trier et filtrer » et texte « Sélectionner »"]
+                    )
+                    outcome = NavigationOutcome.LAYOUT_CHANGED
+                else:
+                    outcome = NavigationOutcome.UNEXPECTED_PAGE
                 break
             await asyncio.sleep(0.25)
         logger.info("Page des likes : %s (%s)", outcome, kind)
@@ -284,27 +330,45 @@ class BrowserSession:
 
         Sert à ajuster `locators.py`. Les fichiers restent dans le dossier de données local ;
         ils contiennent les noms des comptes aimés, à masquer avant de les partager.
+
+        Identifiants : la valeur des champs de saisie est toujours masquée. Si un champ secret
+        est affiché (connexion, fenêtre de ré-authentification), ou si la page est celle de
+        connexion ou de vérification, seul le type de page est enregistré, sans capture ni
+        contenu.
         """
         directory.mkdir(parents=True, exist_ok=True)
         stem = f"{datetime.now():%Y%m%d-%H%M%S}-{label}"
+        report = directory / f"{stem}.txt"
+        kind = self.page_kind
+        if kind in _PRIVATE_PAGES or await self.page.locator(SECRET_FIELD_SELECTOR).count():
+            report.write_text(
+                f"Page : {kind}\n\nDiagnostic réduit : un formulaire de connexion, un champ "
+                "secret ou une vérification est affiché. Ni capture ni contenu de la page ne "
+                "sont enregistrés, pour ne jamais conserver d'identifiant.\n",
+                encoding="utf-8",
+            )
+            logger.info("Diagnostic réduit enregistré (%s) : %s", kind, report)
+            return report
         hrefs = cast(
             list[str],
             await self.page.eval_on_selector_all(
                 "a[href]", "links => links.map(link => link.getAttribute('href'))"
             ),
         )
-        aria = await self.page.locator("body").aria_snapshot()
+        aria = redact_form_values(await self.page.locator("body").aria_snapshot())
         thumbnail_count = await locators.thumbnails(self.page).count()
         samples = cast(list[str], await self.page.evaluate(_THUMBNAIL_SAMPLES_JS))
         # Les paramètres des adresses d'images (signatures temporaires) sont retirés :
         # seul le nom du fichier sert d'identifiant.
-        thumbnail_html = [_URL_QUERY.sub(r"\1?…", sample) for sample in samples]
+        thumbnail_html = [redact_form_values(_URL_QUERY.sub(r"\1?…", sample)) for sample in samples]
         native_selects = await self.page.locator("select").count()
-        report = directory / f"{stem}.txt"
+        # Adresse complète pour la page des likes seulement : ailleurs, elle peut contenir
+        # le nom d'un compte.
+        address = self.page.url if kind is PageKind.LIKES else str(kind)
         report.write_text(
             "\n".join(
                 [
-                    f"Adresse : {self.page.url}",
+                    f"Adresse : {address}",
                     "",
                     f"== Liens ({len(hrefs)}) ==",
                     *hrefs,

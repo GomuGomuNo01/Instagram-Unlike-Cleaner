@@ -55,6 +55,12 @@ export const stopAdvice: Record<string, string> = {
     'Certains likes sont restés affichés : ils sont marqués en échec. Un diagnostic a été enregistré.',
   page_unavailable:
     'La page des likes n’était plus utilisable (fenêtre fermée, connexion perdue…). Vérifie la fenêtre puis reprends.',
+  logged_out:
+    'Instagram t’a déconnecté. Reconnecte-toi toi-même dans la fenêtre Chromium, puis reprends : le nettoyage repartira là où il s’est arrêté.',
+  challenge:
+    'Instagram demande une vérification de sécurité. Termine-la toi-même dans la fenêtre Chromium, attends quelques heures, puis reprends. IUC ne la contourne jamais.',
+  layout_changed:
+    'L’interface d’Instagram a changé : un élément attendu est introuvable, rien n’a été retiré dans ce lot. Un diagnostic a été enregistré ; une mise à jour d’IUC est sans doute nécessaire.',
   user_pause: 'Nettoyage en pause. Tu peux le reprendre quand tu veux.',
   user_stop: 'Nettoyage arrêté : les likes restants ne seront pas retirés.',
 }

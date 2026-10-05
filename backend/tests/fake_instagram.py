@@ -41,7 +41,9 @@ LIKES_PAGE_FR = html(
     "<h1>J’aime</h1><span>Du plus récent au plus ancien</span>"
     "<div role='button'>Trier et filtrer</div><span>Sélectionner</span>" + likes_grid(3)
 )
-LIKES_PAGE_EN = html("<h1>Likes</h1><span>Select</span>")
+LIKES_PAGE_EN = html("<h1>Likes</h1><div role='button'>Sort & filter</div><span>Select</span>")
+# Page des likes dont l'interface a changé : plus de bouton de filtres ni de vignettes.
+LIKES_PAGE_CHANGED = html("<h1>Likes</h1><span>Select</span>")
 
 
 @dataclass(frozen=True)
@@ -214,7 +216,7 @@ selectToggle.onclick = () => {
   selecting = true;
   selectToggle.textContent = 'Annuler';
   selectToggle.insertAdjacentHTML('afterend', '<span id="bar"><span id="counter"></span>'
-    + '<button id="unlike" disabled>Je n’aime plus</button></span>');
+    + '<button id="unlike" disabled>__UNLIKE_LABEL__</button></span>');
   document.getElementById('unlike').onclick = onUnlike;
   grid.querySelectorAll('[data-key]').forEach(element => {
     element.insertAdjacentHTML('beforeend', checkbox(element.dataset.key));
@@ -256,6 +258,10 @@ function perform(keys) {
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape') document.querySelectorAll('[role="dialog"]').forEach(d => d.remove());
 });
+if (__ALERT_ON_LOAD__) {
+  document.body.insertAdjacentHTML('beforeend', '<div role="dialog">' + __ALERT_ON_LOAD__
+    + '<button>OK</button></div>');
+}
 if (__BLOCKING_AFTER_MS__ >= 0) {
   setTimeout(() => document.body.insertAdjacentHTML('beforeend',
     '<div role="dialog">Enregistrer vos informations de connexion ?'
@@ -272,6 +278,8 @@ def interactive_likes_page(
     blocking_dialog_after_ms: int = -1,
     confirm: str = "confirm",
     unlike: str = "ok",
+    unlike_label: str = "Je n’aime plus",
+    alert_on_load: str | None = None,
 ) -> str:
     """Page des likes interactive.
 
@@ -279,7 +287,9 @@ def interactive_likes_page(
     informations de connexion ? ». `confirm` choisit la fenêtre qui suit « Je n’aime plus »
     (confirm, unknown ou none) et `unlike` ce qui se passe ensuite : ok (retrait signalé au
     faux serveur), blocked (« Réessayer plus tard »), silent (rien) ou revert (retrait affiché
-    mais pas enregistré : le like réapparaît au rechargement).
+    mais pas enregistré : le like réapparaît au rechargement). `unlike_label` renomme le
+    bouton « Je n’aime plus » (interface modifiée) et `alert_on_load` affiche dès le
+    chargement une fenêtre d'Instagram portant ce texte.
     """
     script = (
         _LIKES_PAGE_SCRIPT.replace(
@@ -288,6 +298,8 @@ def interactive_likes_page(
         .replace("__BLOCKING_AFTER_MS__", str(blocking_dialog_after_ms))
         .replace("__CONFIRM__", confirm)
         .replace("__UNLIKE__", unlike)
+        .replace("__UNLIKE_LABEL__", unlike_label)
+        .replace("__ALERT_ON_LOAD__", json.dumps(alert_on_load or "", ensure_ascii=False))
     )
     return html(
         "<span id='sort-label'>Du plus récent au plus ancien</span>"
@@ -327,6 +339,10 @@ class FakeInstagram:
 
     def __init__(self) -> None:
         self.offline = False
+        # Signaux d'Instagram au prochain chargement de la page des likes : redirection
+        # (déconnexion forcée, vérification de sécurité) ou fenêtre d'alerte.
+        self.likes_redirect: str | None = None
+        self.alert_on_load: str | None = None
         self.requested_paths: list[str] = []
         self.unliked: list[str] = []
         self._likes: list[FakeLike] | None = None
@@ -377,8 +393,15 @@ class FakeInstagram:
             keys = path.removeprefix("/__unlike__/").split(",")
             self.unliked.extend(keys)
             self._likes = [like for like in self._likes if like.key not in keys]
+        if path == locators.LIKES_PATH and self.likes_redirect is not None:
+            body = html("", f"location.replace({self.likes_redirect!r})")
+            await route.fulfill(status=200, body=body, content_type="text/html; charset=utf-8")
+            return
         if path == locators.LIKES_PATH and self._likes is not None:
-            body = interactive_likes_page(self._likes, **self._likes_options)
+            options = dict(self._likes_options)
+            if self.alert_on_load:
+                options["alert_on_load"] = self.alert_on_load
+            body = interactive_likes_page(self._likes, **options)
             await route.fulfill(status=200, body=body, content_type="text/html; charset=utf-8")
             return
         status, body, headers = self._pages.get(path, (404, html("introuvable"), {}))

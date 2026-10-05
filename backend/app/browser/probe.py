@@ -55,6 +55,7 @@ async def _click(target: Locator, description: str) -> bool:
 
 
 async def _reload(session: BrowserSession) -> None:
+    # Une interface modifiée n'arrête pas l'exploration : c'est là qu'elle est la plus utile.
     outcome = await session.open_likes_page()
-    if outcome is not NavigationOutcome.OK:
+    if outcome not in (NavigationOutcome.OK, NavigationOutcome.LAYOUT_CHANGED):
         raise ProbeError(f"Page des likes non rouverte pendant l'exploration : {outcome}")

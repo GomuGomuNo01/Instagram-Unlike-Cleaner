@@ -1,20 +1,30 @@
 """Nettoyage par lots sur la fausse page des likes : retraits, limites, alertes, reprise."""
 
 import asyncio
+import random
 import time
 from collections.abc import Iterator
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 from sqlalchemy import Engine
 from sqlmodel import Session, col, select
 
+from app.browser import selection
 from app.browser.session import BrowserSession, NavigationOutcome
 from app.core.config import Settings
 from app.core.db import init_db, make_engine
+from app.core.logs import LOG_FILE_NAME, setup_logging
 from app.models.schemas import CleanupFilters
-from app.models.tables import ItemStatus, Job, JobStatus, LikedItem
-from app.services.cleanup import CleanupControl, StopReason, run_cleanup, today_count
+from app.models.tables import EventLog, ItemStatus, Job, JobStatus, LikedItem
+from app.services.cleanup import (
+    STOP_MESSAGES,
+    CleanupControl,
+    StopReason,
+    run_cleanup,
+    today_count,
+)
 from app.services.jobs import JobActionRefused, set_excluded, stop_job
 from app.services.preview import run_preview
 from tests.fake_instagram import FakeInstagram, FakeLike, log_in, make_likes
@@ -326,3 +336,140 @@ async def test_stop_from_another_terminal_is_noticed(
     assert (result.reason, result.done) == (StopReason.USER_STOP, 4)
     assert job_status(engine, job_id) is JobStatus.STOPPED
     assert len(fake_instagram.unliked) == 4
+
+
+# --- Alertes d'Instagram : arrêt immédiat, nettoyage en pause, message explicite ------------
+
+
+@pytest.mark.parametrize(
+    ("location", "reason"),
+    [("/accounts/login/", StopReason.LOGGED_OUT), ("/challenge/", StopReason.CHALLENGE)],
+    ids=["deconnexion-forcee", "verification-de-securite"],
+)
+async def test_instagram_signal_between_batches_pauses_at_once(
+    session: BrowserSession,
+    fake_instagram: FakeInstagram,
+    engine: Engine,
+    tmp_path: Path,
+    location: str,
+    reason: StopReason,
+) -> None:
+    likes = make_likes(10)
+    job_id = await prepare(session, fake_instagram, engine, likes)
+
+    def instagram_reacts(_removed: int, _total: int) -> None:
+        fake_instagram.likes_redirect = location
+
+    result = await run_cleanup(
+        session,
+        engine,
+        make_settings(tmp_path),
+        job_id,
+        account_id=ACCOUNT,
+        on_batch=instagram_reacts,
+    )
+
+    assert result.reason is reason
+    assert fake_instagram.unliked == [like.key for like in likes[:4]]  # rien après le signal
+    assert job_status(engine, job_id) is JobStatus.PAUSED
+    assert list(statuses(engine, job_id).values()).count(ItemStatus.SELECTED) == 6
+    # Message à l'utilisateur : la marche à suivre, enregistrée dans le journal du nettoyage.
+    with Session(engine) as db:
+        messages = [event.message for event in db.exec(select(EventLog)).all()]
+    assert any(message.startswith(STOP_MESSAGES[reason]) for message in messages)
+
+
+async def test_limit_window_on_reload_pauses_at_once(
+    session: BrowserSession, fake_instagram: FakeInstagram, engine: Engine, tmp_path: Path
+) -> None:
+    likes = make_likes(10)
+    job_id = await prepare(session, fake_instagram, engine, likes)
+
+    def instagram_limits(_removed: int, _total: int) -> None:
+        fake_instagram.alert_on_load = (
+            "Réessayer plus tard. Nous limitons la fréquence de certaines actions."
+        )
+
+    result = await run_cleanup(
+        session,
+        engine,
+        make_settings(tmp_path),
+        job_id,
+        account_id=ACCOUNT,
+        on_batch=instagram_limits,
+    )
+
+    assert result.reason is StopReason.ACTION_BLOCKED
+    assert result.detail is not None and "Réessayer plus tard" in result.detail
+    assert fake_instagram.unliked == [like.key for like in likes[:4]]
+    assert job_status(engine, job_id) is JobStatus.PAUSED
+
+
+async def test_changed_interface_pauses_and_names_the_missing_element(
+    session: BrowserSession,
+    fake_instagram: FakeInstagram,
+    engine: Engine,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(selection, "TIMEOUT_MS", 800)
+    # Le bouton « Je n’aime plus » a été renommé dans une nouvelle version d'Instagram.
+    job_id = await prepare(session, fake_instagram, engine, make_likes(6), unlike_label="Retirer")
+    settings = make_settings(tmp_path)
+
+    result = await run_cleanup(session, engine, settings, job_id, account_id=ACCOUNT)
+
+    assert result.reason is StopReason.LAYOUT_CHANGED
+    assert result.detail is not None and "Je n’aime plus" in result.detail
+    assert unlike_requests(fake_instagram) == []
+    assert job_status(engine, job_id) is JobStatus.PAUSED
+    assert list(settings.diagnostics_dir.glob("*interface.txt"))
+
+
+# --- Cadence : délais aléatoires entre actions et entre lots ------------------------------
+
+
+async def test_pauses_are_drawn_at_random_within_their_bounds(
+    session: BrowserSession,
+    fake_instagram: FakeInstagram,
+    engine: Engine,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    job_id = await prepare(session, fake_instagram, engine, make_likes(8))
+    settings = make_settings(tmp_path, delay_min=0.01, delay_max=0.05)
+    draws: list[tuple[float, float]] = []
+    uniform = random.uniform
+
+    def spy(low: float, high: float) -> float:
+        draws.append((low, high))
+        value = uniform(low, high)
+        assert low <= value <= high
+        return value
+
+    monkeypatch.setattr(random, "uniform", spy)
+
+    await run_cleanup(session, engine, settings, job_id, account_id=ACCOUNT)
+
+    assert draws.count(selection.CLICK_PAUSE) == 8  # entre deux cases cochées
+    assert draws.count((settings.delay_min, settings.delay_max)) == 2  # après chaque lot
+
+
+# --- Journaux : aucune donnée personnelle inutile -----------------------------------------
+
+
+async def test_logs_never_name_the_liked_accounts(
+    session: BrowserSession, fake_instagram: FakeInstagram, engine: Engine, tmp_path: Path
+) -> None:
+    settings = make_settings(tmp_path, log_level="DEBUG")
+    settings.ensure_dirs()
+    setup_logging(settings)
+    likes = [replace(like, author="compte_canari") for like in make_likes(6)]
+    job_id = await prepare(session, fake_instagram, engine, likes)
+
+    await run_cleanup(session, engine, settings, job_id, account_id=ACCOUNT)
+
+    log = (settings.logs_dir / LOG_FILE_NAME).read_text(encoding="utf-8")
+    assert "Nettoyage n°" in log  # le journal est bien écrit, au niveau le plus détaillé
+    assert "compte_canari" not in log
+    assert "faux-jeton" not in log  # valeur du cookie de session

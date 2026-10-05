@@ -15,6 +15,8 @@ from typing import Annotated
 
 from fastapi import HTTPException, Query, Request, Security, status
 from fastapi.security import APIKeyHeader
+from starlette.datastructures import MutableHeaders
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 TOKEN_HEADER = "X-IUC-Token"
 
@@ -41,3 +43,39 @@ def require_token(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Jeton manquant ou invalide (en-tête {TOKEN_HEADER}).",
         )
+
+
+# En-têtes ajoutés à toutes les réponses : pas d'interprétation du type de contenu, pas
+# d'adresse transmise aux autres sites, ressources réservées à l'interface d'IUC.
+_COMMON_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "no-referrer",
+    "Cross-Origin-Resource-Policy": "same-origin",
+    "Cross-Origin-Opener-Policy": "same-origin",
+}
+
+
+class SecurityHeadersMiddleware:
+    """Ajoute les en-têtes de sécurité, et interdit la mise en cache des réponses de l'API
+    (elles contiennent des noms de comptes). Middleware ASGI pur : le flux SSE n'est pas
+    retenu en mémoire."""
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        is_api = str(scope["path"]).startswith("/api/")
+
+        async def send_with_headers(message: Message) -> None:
+            if message["type"] == "http.response.start":
+                headers = MutableHeaders(scope=message)
+                for name, value in _COMMON_HEADERS.items():
+                    headers.setdefault(name, value)
+                if is_api:
+                    headers.setdefault("Cache-Control", "no-store")
+            await send(message)
+
+        await self.app(scope, receive, send_with_headers)
