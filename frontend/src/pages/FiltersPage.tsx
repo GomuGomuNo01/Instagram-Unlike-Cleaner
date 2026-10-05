@@ -1,12 +1,22 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { useNavigate } from 'react-router'
 
 import { api, ApiError, errorMessage, unwrap } from '../api/client'
 import type { Author, ContentFilter, SortOrder } from '../api/types'
 import { AuthorsPicker } from '../components/AuthorsPicker'
 import { FlowSteps } from '../components/FlowSteps'
 import { AppPage } from '../components/Layout'
-import { Alert, Button, Card, Field, inputClass, PageHeader } from '../components/ui'
+import { ArrowRightIcon } from '../components/icons'
+import {
+  Alert,
+  Button,
+  Card,
+  ChoiceGroup,
+  Field,
+  PageHeader,
+  Switch,
+  TextLink,
+} from '../components/ui'
 import { contentFilterLabels, sortOrderLabels } from '../i18n/fr'
 import {
   buildJobRequest,
@@ -24,28 +34,43 @@ const FIELD_IDS: Partial<Record<keyof FiltersForm, string>> = {
   maxScanned: 'maximum',
 }
 
+const sortOptions = (Object.keys(sortOrderLabels) as SortOrder[]).map((value) => ({
+  value,
+  label: sortOrderLabels[value],
+}))
+const contentOptions = (Object.keys(contentFilterLabels) as ContentFilter[]).map((value) => ({
+  value,
+  label: contentFilterLabels[value],
+}))
+
 /** Critères du nettoyage. La période et l'ordre passent par le filtre d'Instagram ; le type
  * et les comptes sont filtrés par IUC (la version web d'Instagram ne les propose pas). */
 export function FiltersPage() {
   const navigate = useNavigate()
   const [form, setForm] = useState<FiltersForm>(emptyFilters)
+  const [trial, setTrial] = useState(false)
   const [errors, setErrors] = useState<FiltersErrors>({})
   const [serverError, setServerError] = useState<string | null>(null)
   const [needsLogin, setNeedsLogin] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [authors, setAuthors] = useState<Author[]>([])
+  const [authorsLoading, setAuthorsLoading] = useState(true)
   const today = localToday()
 
   useEffect(() => {
     let active = true
-    unwrap(api.GET('/api/authors')).then(
-      (loaded) => {
-        if (active) setAuthors(loaded)
-      },
-      () => {
-        // Liste facultative : sans elle, la saisie libre reste possible.
-      },
-    )
+    unwrap(api.GET('/api/authors'))
+      .then(
+        (loaded) => {
+          if (active) setAuthors(loaded)
+        },
+        () => {
+          // Liste facultative : sans elle, la saisie libre reste possible.
+        },
+      )
+      .finally(() => {
+        if (active) setAuthorsLoading(false)
+      })
     return () => {
       active = false
     }
@@ -58,7 +83,9 @@ export function FiltersPage() {
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
-    const problems = validateFilters(form, today)
+    // Le nombre saisi est conservé même si l'essai est désactivé, mais n'est envoyé qu'avec.
+    const sent = trial ? form : { ...form, maxScanned: '' }
+    const problems = validateFilters(sent, today)
     setErrors(problems)
     setServerError(null)
     setNeedsLogin(false)
@@ -69,8 +96,8 @@ export function FiltersPage() {
     }
     setSubmitting(true)
     try {
-      const job = await unwrap(api.POST('/api/jobs', { body: buildJobRequest(form) }))
-      navigate(`/nettoyages/${job.id}/apercu`)
+      const job = await unwrap(api.POST('/api/jobs', { body: buildJobRequest(sent) }))
+      navigate(`/nettoyages/${job.id}/apercu`, { viewTransition: true })
     } catch (failure) {
       // Les valeurs saisies sont conservées : seul le message s'affiche.
       setServerError(errorMessage(failure))
@@ -87,8 +114,8 @@ export function FiltersPage() {
         title="Choisis les likes à cibler"
         description="Rien n’est retiré à cette étape : IUC prépare d’abord un aperçu que tu pourras vérifier."
       />
-      <form onSubmit={submit} noValidate className="space-y-6">
-        <Card>
+      <form onSubmit={submit} noValidate className="space-y-4">
+        <Card padding="lg">
           <Section
             title="Période"
             help="Date à laquelle tu as aimé la publication. Laisse vide pour tout l’historique."
@@ -102,7 +129,7 @@ export function FiltersPage() {
                     max={today}
                     value={form.startDate}
                     onChange={(event) => update('startDate', event.target.value)}
-                    className={inputClass}
+                    className="input"
                   />
                 )}
               </Field>
@@ -114,59 +141,43 @@ export function FiltersPage() {
                     max={today}
                     value={form.endDate}
                     onChange={(event) => update('endDate', event.target.value)}
-                    className={inputClass}
+                    className="input"
                   />
                 )}
               </Field>
             </div>
-            <fieldset className="mt-6">
-              <legend className="text-sm font-medium">Ordre de parcours</legend>
-              <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:gap-6">
-                {(Object.keys(sortOrderLabels) as SortOrder[]).map((sort) => (
-                  <label key={sort} className="flex min-h-11 cursor-pointer items-center gap-3">
-                    <input
-                      type="radio"
-                      name="sort"
-                      checked={form.sort === sort}
-                      onChange={() => update('sort', sort)}
-                      className="h-5 w-5 accent-indigo-600"
-                    />
-                    <span className="text-body">{sortOrderLabels[sort]}</span>
-                  </label>
-                ))}
-              </div>
-            </fieldset>
+            <div className="mt-6">
+              <ChoiceGroup
+                legend="Ordre de parcours"
+                name="ordre"
+                options={sortOptions}
+                value={form.sort}
+                onChange={(sort) => update('sort', sort)}
+              />
+            </div>
           </Section>
         </Card>
 
-        <Card>
+        <Card padding="lg">
           <Section
             title="Contenus et comptes"
             help="Un like dont le type ou l’auteur est illisible est toujours gardé."
           >
-            <Field id="contenu" label="Type de contenu">
-              {(aria) => (
-                <select
-                  {...aria}
-                  value={form.content}
-                  onChange={(event) => update('content', event.target.value as ContentFilter)}
-                  className={inputClass}
-                >
-                  {(Object.keys(contentFilterLabels) as ContentFilter[]).map((content) => (
-                    <option key={content} value={content}>
-                      {contentFilterLabels[content]}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </Field>
-            <div className="mt-6 grid gap-6 lg:grid-cols-2">
+            <ChoiceGroup
+              legend="Type de contenu"
+              name="contenu"
+              options={contentOptions}
+              value={form.content}
+              onChange={(content) => update('content', content)}
+            />
+            <div className="mt-8 grid gap-8 lg:grid-cols-2">
               <AuthorsPicker
                 label="Cibler uniquement ces comptes"
                 help="Laisse vide pour cibler tous les comptes."
                 value={form.includeAuthors}
                 onChange={(value) => update('includeAuthors', value)}
                 suggestions={authors}
+                loading={authorsLoading}
                 unavailable={form.excludeAuthors}
                 unavailableLabel="déjà protégé"
               />
@@ -177,6 +188,7 @@ export function FiltersPage() {
                 value={form.excludeAuthors}
                 onChange={(value) => update('excludeAuthors', value)}
                 suggestions={authors}
+                loading={authorsLoading}
                 unavailable={form.includeAuthors}
                 unavailableLabel="déjà ciblé"
               />
@@ -184,25 +196,38 @@ export function FiltersPage() {
           </Section>
         </Card>
 
-        <Card>
-          <Section
-            title="Premier essai"
-            help="Facultatif : ne lire que les likes les plus récents de la période, pour tester."
-          >
-            <Field id="maximum" label="Nombre maximal de likes à lire" error={errors.maxScanned}>
+        <Card padding="lg">
+          <Switch
+            checked={trial}
+            onChange={(value) => {
+              setTrial(value)
+              setErrors((previous) => ({ ...previous, maxScanned: undefined }))
+            }}
+            label="Faire d’abord un essai"
+            description="Ne lire que les likes les plus récents de la période, pour tester sur un petit volume."
+          />
+          {trial && (
+            <Field
+              id="maximum"
+              label="Nombre maximal de likes à lire"
+              help="Laisse vide pour lire toute la période."
+              error={errors.maxScanned}
+              className="mt-6 animate-fade-up"
+            >
               {(aria) => (
                 <input
                   {...aria}
                   type="number"
                   min={1}
                   inputMode="numeric"
+                  placeholder="Par exemple 100"
                   value={form.maxScanned}
                   onChange={(event) => update('maxScanned', event.target.value)}
-                  className={`${inputClass} sm:max-w-48`}
+                  className="input sm:max-w-48"
                 />
               )}
             </Field>
-          </Section>
+          )}
         </Card>
 
         {serverError && (
@@ -210,15 +235,19 @@ export function FiltersPage() {
             <p>{serverError}</p>
             {needsLogin && (
               <p className="mt-2">
-                <Link to="/connexion" className="font-medium underline">
-                  Revenir à la connexion
-                </Link>
+                <TextLink to="/connexion">Revenir à la connexion</TextLink>
               </p>
             )}
           </Alert>
         )}
-        <div className="flex justify-end">
-          <Button type="submit" size="lg" loading={submitting} className="w-full sm:w-auto">
+        <div className="flex justify-end pt-2">
+          <Button
+            type="submit"
+            size="lg"
+            loading={submitting}
+            trailingIcon={submitting ? undefined : <ArrowRightIcon />}
+            className="w-full sm:w-auto"
+          >
             {submitting ? 'Préparation de l’aperçu…' : 'Préparer l’aperçu'}
           </Button>
         </div>
@@ -230,8 +259,8 @@ export function FiltersPage() {
 function Section({ title, help, children }: { title: string; help: string; children: ReactNode }) {
   return (
     <div>
-      <h2 className="text-h3">{title}</h2>
-      <p className="text-small mt-1">{help}</p>
+      <h2 className="text-h3 text-fg">{title}</h2>
+      <p className="mt-1 text-small text-fg-muted">{help}</p>
       <div className="mt-6">{children}</div>
     </div>
   )

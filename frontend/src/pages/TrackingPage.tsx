@@ -5,19 +5,23 @@ import { api, errorMessage, unwrap } from '../api/client'
 import { useJobEvents, type JobEvent } from '../api/events'
 import type { Job } from '../api/types'
 import { parseJobId, useJob } from '../api/useJob'
-import { ConfirmDialog } from '../components/ConfirmDialog'
 import { FlowSteps } from '../components/FlowSteps'
 import { AppPage } from '../components/Layout'
+import { ArrowRightIcon, PauseIcon, PlayIcon } from '../components/icons'
 import { JobStatusBadge } from '../components/StatusBadge'
 import {
   Alert,
   Button,
   ButtonLink,
   Card,
+  ConfirmDialog,
+  LiveDot,
   PageHeader,
   ProgressBar,
-  Spinner,
+  Skeleton,
+  SkeletonBlock,
   Stat,
+  useToast,
 } from '../components/ui'
 import { stopAdvice } from '../i18n/fr'
 import { formatDuration, plural } from '../lib/format'
@@ -40,6 +44,7 @@ const titles: Partial<Record<Job['status'], string>> = {
 
 /** Suivi en direct : progression, vitesse, temps restant, contrôle et journal. */
 function Tracking({ jobId }: { jobId: number }) {
+  const toast = useToast()
   const { job, error, reload } = useJob(jobId)
   const { events, restart } = useJobEvents(jobId)
   const [action, setAction] = useState<'pause' | 'resume' | 'stop' | null>(null)
@@ -57,7 +62,15 @@ function Tracking({ jobId }: { jobId: number }) {
     return (
       <AppPage>
         <FlowSteps current={4} />
-        {error ? <Alert tone="danger">{error}</Alert> : <Spinner label="Chargement du suivi…" />}
+        {error ? (
+          <Alert tone="danger">{error}</Alert>
+        ) : (
+          <SkeletonBlock label="Chargement du suivi…">
+            <Skeleton className="h-10 w-2/3 max-w-text" />
+            <Skeleton className="mt-8 h-56 w-full rounded-xl" />
+            <Skeleton className="mt-4 h-40 w-full rounded-xl" />
+          </SkeletonBlock>
+        )}
       </AppPage>
     )
   }
@@ -80,6 +93,14 @@ function Tracking({ jobId }: { jobId: number }) {
       await request()
       if (reopen) restart()
       await reload()
+      if (kind === 'pause') {
+        toast({
+          tone: 'info',
+          title: 'Pause demandée',
+          description: 'Elle prend effet à la fin du lot en cours.',
+        })
+      }
+      if (kind === 'resume') toast({ title: 'Nettoyage repris' })
     } catch (failure) {
       setActionError(errorMessage(failure))
     } finally {
@@ -101,12 +122,22 @@ function Tracking({ jobId }: { jobId: number }) {
   const actions = (
     <>
       {job.running && (
-        <Button variant="secondary" onClick={() => void pause()} loading={action === 'pause'}>
+        <Button
+          variant="secondary"
+          onClick={() => void pause()}
+          loading={action === 'pause'}
+          icon={<PauseIcon className="h-4 w-4" />}
+        >
           {action === 'pause' ? 'Pause demandée' : 'Mettre en pause'}
         </Button>
       )}
       {!job.running && job.status === 'paused' && (
-        <Button size="lg" onClick={() => void resume()} loading={action === 'resume'}>
+        <Button
+          size="lg"
+          onClick={() => void resume()}
+          loading={action === 'resume'}
+          icon={<PlayIcon className="h-4 w-4" />}
+        >
           Reprendre le nettoyage
         </Button>
       )}
@@ -116,7 +147,11 @@ function Tracking({ jobId }: { jobId: number }) {
         </Button>
       )}
       {finished && (
-        <ButtonLink to={`/nettoyages/${job.id}/rapport`} size="lg">
+        <ButtonLink
+          to={`/nettoyages/${job.id}/rapport`}
+          size="lg"
+          trailingIcon={<ArrowRightIcon />}
+        >
           Voir le rapport
         </ButtonLink>
       )}
@@ -135,19 +170,34 @@ function Tracking({ jobId }: { jobId: number }) {
         }
         actions={actions}
       />
-      <div className="space-y-6">
-        <Card>
-          <div className="flex flex-wrap items-center gap-3">
+      <div className="space-y-4">
+        <Card padding="lg">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <JobStatusBadge status={job.status} />
-            {job.running && <Spinner label="Lot en cours de traitement" />}
+            {job.running && (
+              <span className="flex items-center gap-2 text-small text-fg-muted">
+                <LiveDot />
+                Lot en cours de traitement
+              </span>
+            )}
           </div>
           <div className="mt-6" aria-live="polite">
-            <ProgressBar value={percent(handled, handled + job.to_process)} label="Likes traités" />
-            <p className="text-small mt-2">
-              {plural(handled, 'like traité', 'likes traités')} sur {handled + job.to_process}
-            </p>
+            <div className="flex items-baseline justify-between gap-4">
+              <p className="text-small text-fg-muted">
+                {plural(handled, 'like traité', 'likes traités')} sur {handled + job.to_process}
+              </p>
+              <p className="text-h3 text-fg tabular-nums">
+                {percent(handled, handled + job.to_process)} %
+              </p>
+            </div>
+            <div className="mt-3">
+              <ProgressBar
+                value={percent(handled, handled + job.to_process)}
+                label="Likes traités"
+              />
+            </div>
           </div>
-          <dl className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <dl className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-5">
             <Stat label="Retirés" value={done} />
             <Stat label="Échecs" value={failed} />
             <Stat label="Introuvables" value={skipped} />
@@ -157,7 +207,7 @@ function Tracking({ jobId }: { jobId: number }) {
               value={remaining === null ? 'En attente' : `≈ ${formatDuration(remaining)}`}
             />
           </dl>
-          <p className="text-small mt-4">
+          <p className="mt-4 text-small text-fg-muted">
             Vitesse et temps restant sont calculés après le premier lot, pauses comprises. La limite
             quotidienne peut interrompre le nettoyage avant la fin.
           </p>
@@ -171,18 +221,18 @@ function Tracking({ jobId }: { jobId: number }) {
           job.status === 'paused' && <Alert tone="warning">{stopAdvice.user_pause}</Alert>
         )}
 
-        <Card>
-          <h2 className="text-h3">Journal</h2>
+        <Card padding="lg">
+          <h2 className="text-h3 text-fg">Journal</h2>
           {run.log.length === 0 ? (
-            <p className="text-small mt-2">
+            <p className="mt-2 text-small text-fg-muted">
               Aucune exécution suivie depuis l’ouverture de cette page.
             </p>
           ) : (
             <ol className="mt-4 space-y-2" aria-live="polite">
               {run.log.map((line) => (
-                <li key={line.key} className="flex gap-4 text-sm">
-                  <time className="text-zinc-600 tabular-nums dark:text-zinc-400">{line.time}</time>
-                  <span>{line.text}</span>
+                <li key={line.key} className="flex animate-fade-up gap-4 text-small">
+                  <time className="text-fg-muted tabular-nums">{line.time}</time>
+                  <span className="text-fg">{line.text}</span>
                 </li>
               ))}
             </ol>

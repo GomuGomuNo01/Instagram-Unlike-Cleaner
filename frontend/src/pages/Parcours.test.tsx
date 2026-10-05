@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { describe, expect, it } from 'vitest'
@@ -26,6 +26,21 @@ describe('page d’accueil', () => {
   })
 })
 
+describe('en-tête', () => {
+  it('ouvre le menu mobile et le referme avec Échap', async () => {
+    renderAt('/')
+    const toggle = screen.getByRole('button', { name: 'Ouvrir le menu' })
+
+    await userEvent.click(toggle)
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('navigation', { name: 'Menu' })).not.toHaveAttribute('inert')
+
+    await userEvent.keyboard('{Escape}')
+    expect(screen.getByRole('button', { name: 'Ouvrir le menu' })).toHaveFocus()
+    expect(screen.getByRole('navigation', { name: 'Menu', hidden: true })).toHaveAttribute('inert')
+  })
+})
+
 describe('avertissement et consentement', () => {
   it('bloque le parcours tant que les risques ne sont pas acceptés', async () => {
     const router = renderAt('/commencer')
@@ -36,7 +51,8 @@ describe('avertissement et consentement', () => {
     await userEvent.click(accept)
 
     expect(hasConsent()).toBe(true)
-    expect(router.state.location.pathname).toBe('/connexion')
+    // L'écran suivant est chargé à la demande : la navigation aboutit une fois prêt.
+    await waitFor(() => expect(router.state.location.pathname).toBe('/connexion'))
   })
 
   it('renvoie vers l’avertissement un écran ouvert sans consentement', async () => {

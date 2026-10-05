@@ -1,0 +1,1207 @@
+/* Composants du système de design. Chaque état (survol, appui, focus, désactivé,
+ * chargement, succès, erreur) est défini ici une seule fois ; le JSX choisit seulement la
+ * variante. Les survols ne s'appliquent qu'aux appareils qui savent survoler. */
+
+@layer components {
+  /* --- Texte ---------------------------------------------------------------------------- */
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: var(--text-small);
+    line-height: var(--text-small--line-height);
+    font-weight: 600;
+    color: var(--color-primary-strong);
+  }
+
+  .link {
+    font-weight: 500;
+    color: var(--color-primary-strong);
+    text-decoration-line: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    text-decoration-color: color-mix(in oklab, currentColor 40%, transparent);
+    transition: text-decoration-color var(--transition-duration-hover) var(--ease-out);
+  }
+
+  .link:hover {
+    text-decoration-color: currentColor;
+  }
+
+  /* --- Boutons -------------------------------------------------------------------------- */
+  .btn {
+    position: relative;
+    display: inline-flex;
+    min-height: 2.75rem; /* 44 px : cible tactile confortable */
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding-inline: 1rem;
+    border: 1px solid transparent;
+    border-radius: 9999px;
+    font-size: var(--text-small);
+    line-height: 1.25rem;
+    font-weight: 600;
+    white-space: nowrap;
+    text-decoration: none;
+    cursor: pointer;
+    user-select: none;
+    transition-property:
+      background-color, border-color, color, box-shadow, translate, scale, opacity;
+    transition-duration: var(--transition-duration-hover);
+    transition-timing-function: var(--ease-out);
+  }
+
+  .btn-lg {
+    min-height: 3rem;
+    padding-inline: 1.5rem;
+    font-size: var(--text-body);
+  }
+
+  .btn-icon {
+    width: 2.75rem;
+    padding-inline: 0;
+  }
+
+  @media (hover: hover) {
+    .btn:not(:disabled, [aria-disabled='true']):hover {
+      translate: 0 calc(var(--motion-distance-sm) * -1);
+    }
+
+    .btn:not(:disabled):hover [data-icon='trailing'] {
+      translate: calc(var(--motion-distance-sm) * 1.5) 0;
+    }
+  }
+
+  .btn:not(:disabled, [aria-disabled='true']):active {
+    translate: none;
+    scale: var(--motion-scale-press);
+    transition-duration: var(--transition-duration-micro);
+  }
+
+  .btn [data-icon] {
+    transition: translate var(--transition-duration-hover) var(--ease-out);
+  }
+
+  .btn:disabled:not([aria-busy='true']),
+  .btn[aria-disabled='true'] {
+    cursor: not-allowed;
+    opacity: 0.5;
+    box-shadow: none;
+  }
+
+  .btn[aria-busy='true'] {
+    cursor: progress;
+  }
+
+  .btn-primary {
+    background-color: var(--color-primary);
+    color: var(--color-on-primary);
+    box-shadow: var(--elevation-xs), var(--highlight-inset);
+  }
+
+  .btn-primary:not(:disabled):hover {
+    background-color: var(--color-primary-hover);
+    box-shadow: var(--elevation-glow), var(--highlight-inset);
+  }
+
+  .btn-primary:not(:disabled):active {
+    background-color: var(--color-primary-active);
+  }
+
+  .btn-secondary {
+    border-color: var(--color-border-strong);
+    background-color: var(--color-surface);
+    color: var(--color-fg);
+    box-shadow: var(--elevation-xs);
+  }
+
+  .btn-secondary:not(:disabled):hover {
+    border-color: var(--color-fg-subtle);
+    background-color: var(--color-surface-muted);
+  }
+
+  .btn-secondary:not(:disabled):active {
+    background-color: var(--color-fill-strong);
+  }
+
+  .btn-ghost {
+    color: var(--color-fg-muted);
+  }
+
+  .btn-ghost:not(:disabled):hover {
+    background-color: var(--color-fill);
+    color: var(--color-fg);
+  }
+
+  .btn-ghost:not(:disabled):active {
+    background-color: var(--color-fill-strong);
+  }
+
+  .btn-danger {
+    background-color: var(--color-danger);
+    color: var(--color-white);
+    box-shadow: var(--elevation-xs), var(--highlight-inset);
+  }
+
+  .btn-danger:not(:disabled):hover {
+    background-color: var(--color-danger-hover);
+  }
+
+  /* Sur un fond de couleur principale (appel final de la page d'accueil). */
+  .btn-inverse {
+    background-color: var(--color-white);
+    color: var(--color-indigo-700);
+    box-shadow: var(--elevation-md);
+  }
+
+  .btn-inverse:hover {
+    background-color: var(--color-indigo-50);
+  }
+
+  .btn[data-state='success'] {
+    border-color: transparent;
+    background-color: var(--color-success);
+    color: var(--color-white);
+  }
+
+  .btn[data-state='success'] [data-icon='status'] {
+    animation: var(--animate-pop);
+  }
+
+  /* --- Champs de formulaire ------------------------------------------------------------- */
+  .input {
+    display: block;
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    background-color: var(--color-surface);
+    color: var(--color-fg);
+    font-size: var(--text-body); /* 16 px : pas de zoom automatique sur mobile */
+    line-height: 1.5rem;
+    box-shadow: var(--elevation-xs);
+    transition-property: border-color, box-shadow, background-color;
+    transition-duration: var(--transition-duration-hover);
+    transition-timing-function: var(--ease-out);
+  }
+
+  .input::placeholder {
+    color: var(--color-fg-subtle);
+  }
+
+  @media (hover: hover) {
+    .input:hover:not(:disabled, :focus) {
+      border-color: var(--color-fg-subtle);
+    }
+  }
+
+  .input:focus {
+    outline: none;
+    border-color: var(--color-ring);
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--color-ring) 22%, transparent);
+  }
+
+  .input[aria-invalid='true'] {
+    border-color: var(--color-danger-strong);
+  }
+
+  .input[aria-invalid='true']:focus {
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--color-danger-strong) 20%, transparent);
+  }
+
+  .input[data-state='success'] {
+    border-color: var(--color-success-strong);
+  }
+
+  .input:disabled {
+    cursor: not-allowed;
+    background-color: var(--color-surface-muted);
+    color: var(--color-fg-muted);
+    box-shadow: none;
+  }
+
+  @media (forced-colors: active) {
+    .input:focus {
+      outline: 2px solid CanvasText;
+    }
+  }
+
+  /* Case à cocher native, redessinée : la coche apparaît avec un léger dépassement. */
+  .checkbox {
+    display: inline-grid;
+    flex-shrink: 0;
+    place-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    margin: 0;
+    appearance: none;
+    border: 1.5px solid var(--color-border-strong);
+    border-radius: var(--radius-xs);
+    background-color: var(--color-surface);
+    cursor: pointer;
+    transition-property: background-color, border-color, scale;
+    transition-duration: var(--transition-duration-micro);
+    transition-timing-function: var(--ease-out);
+  }
+
+  .checkbox::before {
+    content: '';
+    width: 0.875rem;
+    height: 0.875rem;
+    background-color: var(--color-on-primary);
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+    opacity: 0;
+    scale: 0.4;
+    transition:
+      scale var(--transition-duration-micro) var(--ease-emphasized),
+      opacity var(--transition-duration-micro) var(--ease-out);
+  }
+
+  .checkbox:checked,
+  .checkbox[data-checked='true'] {
+    border-color: var(--color-primary);
+    background-color: var(--color-primary);
+  }
+
+  .checkbox:checked::before,
+  .checkbox[data-checked='true']::before {
+    opacity: 1;
+    scale: 1;
+  }
+
+  @media (hover: hover) {
+    .checkbox:hover:not(:disabled, :checked) {
+      border-color: var(--color-primary);
+    }
+  }
+
+  .checkbox:active:not(:disabled) {
+    scale: 0.9;
+  }
+
+  .checkbox:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  @media (forced-colors: active) {
+    .checkbox {
+      appearance: auto;
+    }
+
+    .checkbox::before {
+      display: none;
+    }
+  }
+
+  /* Interrupteur : bouton role="switch" sur toute la ligne, pastille qui glisse. */
+  .switch-track {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    width: 2.75rem;
+    height: 1.5rem;
+    padding: 0.125rem;
+    border-radius: 9999px;
+    background-color: var(--color-border-strong);
+    transition: background-color var(--transition-duration-micro) var(--ease-out);
+  }
+
+  .switch-track::before {
+    content: '';
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 9999px;
+    background-color: var(--color-white);
+    box-shadow: var(--elevation-sm);
+    transition: translate var(--transition-duration-component) var(--ease-emphasized);
+  }
+
+  [aria-checked='true'] > .switch-track {
+    background-color: var(--color-primary);
+  }
+
+  [aria-checked='true'] > .switch-track::before {
+    translate: 1.25rem 0;
+  }
+
+  /* Choix exclusif (bouton radio) présenté comme une pastille, avec un point qui indique le
+   * choix sans dépendre de la couleur. */
+  .choice {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    gap: 0.5rem;
+    padding-inline: 0.75rem 1rem;
+    border: 1px solid var(--color-border-strong);
+    border-radius: 9999px;
+    background-color: var(--color-surface);
+    font-size: var(--text-small);
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+    transition-property: border-color, background-color, color, scale;
+    transition-duration: var(--transition-duration-hover);
+    transition-timing-function: var(--ease-out);
+  }
+
+  .choice::before {
+    content: '';
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    border: 1.5px solid var(--color-border-strong);
+    border-radius: 9999px;
+    background-color: var(--color-surface);
+    transition-property: border-color, box-shadow;
+    transition-duration: var(--transition-duration-micro);
+    transition-timing-function: var(--ease-out);
+  }
+
+  @media (hover: hover) {
+    .choice:hover {
+      border-color: var(--color-fg-subtle);
+    }
+  }
+
+  .choice:active {
+    scale: var(--motion-scale-press);
+  }
+
+  .choice:has(:checked) {
+    border-color: var(--color-primary);
+    background-color: var(--color-primary-soft);
+    color: var(--color-primary-strong);
+  }
+
+  .choice:has(:checked)::before {
+    border-color: var(--color-primary);
+    box-shadow: inset 0 0 0 3px var(--color-surface);
+    background-color: var(--color-primary);
+  }
+
+  .choice:has(:focus-visible) {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 3px;
+  }
+
+  .choice:has(:disabled) {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  /* --- Surfaces ------------------------------------------------------------------------- */
+  .card {
+    position: relative;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    background-color: var(--color-surface);
+    box-shadow: var(--elevation-xs);
+  }
+
+  .card-interactive {
+    transition-property: translate, box-shadow, border-color;
+    transition-duration: var(--transition-duration-component);
+    transition-timing-function: var(--ease-out);
+  }
+
+  @media (hover: hover) {
+    .card-interactive:hover {
+      translate: 0 calc(var(--motion-distance-sm) * -1);
+      border-color: color-mix(in oklab, var(--color-primary) 35%, var(--color-border));
+      box-shadow: var(--elevation-md);
+    }
+  }
+
+  .card-interactive:has(:focus-visible) {
+    border-color: var(--color-ring);
+  }
+
+  /* Halo qui suit le curseur à l'intérieur d'une carte (useSpotlight, souris uniquement). */
+  .spotlight {
+    isolation: isolate;
+  }
+
+  .spotlight::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    z-index: -1;
+    border-radius: inherit;
+    background: radial-gradient(
+      22rem circle at var(--mx, 50%) var(--my, 0%),
+      color-mix(in oklab, var(--color-glow) 13%, transparent),
+      transparent 70%
+    );
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-duration-component) var(--ease-out);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .spotlight:hover::before {
+      opacity: 1;
+    }
+  }
+
+  /* Bande de section : fond légèrement teinté, fondu en haut et en bas pour enchaîner les
+   * sections sans rupture. */
+  .surface-band {
+    background-image: linear-gradient(
+      to bottom,
+      var(--color-canvas),
+      var(--color-canvas-subtle) 6rem,
+      var(--color-canvas-subtle) calc(100% - 6rem),
+      var(--color-canvas)
+    );
+  }
+
+  /* Trame de points discrète, estompée vers les bords. */
+  .dot-grid {
+    background-image: radial-gradient(
+      color-mix(in oklab, var(--color-fg) 10%, transparent) 1px,
+      transparent 1px
+    );
+    background-size: 1.5rem 1.5rem;
+    mask-image: radial-gradient(ellipse at center, black 20%, transparent 70%);
+  }
+
+  /* Halo coloré d'arrière-plan (dégradé radial, sans filtre coûteux). */
+  .glow {
+    border-radius: 9999px;
+    background: radial-gradient(
+      closest-side,
+      color-mix(in oklab, var(--color-glow) 32%, transparent),
+      transparent
+    );
+    pointer-events: none;
+  }
+
+  .glow-alt {
+    background: radial-gradient(
+      closest-side,
+      color-mix(in oklab, var(--color-glow-alt) 26%, transparent),
+      transparent
+    );
+  }
+
+  /* Fenêtre d'application stylisée (illustrations du produit). */
+  .window {
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    background-color: var(--color-surface);
+    box-shadow: var(--elevation-lg);
+  }
+
+  .window-bar {
+    display: flex;
+    height: 2.5rem;
+    align-items: center;
+    gap: 0.5rem;
+    padding-inline: 1rem;
+    border-bottom: 1px solid var(--color-border);
+    background-color: var(--color-surface-muted);
+  }
+
+  .window-dot {
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: 9999px;
+    background-color: var(--color-border-strong);
+  }
+
+  /* Carte flottante en verre dépoli, utilisée avec modération. */
+  .glass {
+    border: 1px solid color-mix(in oklab, var(--color-border) 70%, transparent);
+    background-color: color-mix(in oklab, var(--color-surface) 82%, transparent);
+    box-shadow: var(--elevation-lg);
+    backdrop-filter: blur(12px) saturate(1.4);
+  }
+
+  /* --- Indicateurs ---------------------------------------------------------------------- */
+  .badge {
+    display: inline-flex;
+    min-height: 1.5rem;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.125rem 0.625rem;
+    border-radius: 9999px;
+    background-color: var(--color-fill);
+    color: var(--color-fg);
+    font-size: var(--text-caption);
+    line-height: 1rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .badge::before {
+    content: '';
+    width: 0.375rem;
+    height: 0.375rem;
+    border-radius: 9999px;
+    background-color: currentColor;
+    opacity: 0.8;
+  }
+
+  .badge[data-tone='info'] {
+    background-color: var(--color-info-soft);
+    color: var(--color-info-strong);
+  }
+
+  .badge[data-tone='success'] {
+    background-color: var(--color-success-soft);
+    color: var(--color-success-strong);
+  }
+
+  .badge[data-tone='warning'] {
+    background-color: var(--color-warning-soft);
+    color: var(--color-warning-strong);
+  }
+
+  .badge[data-tone='danger'] {
+    background-color: var(--color-danger-soft);
+    color: var(--color-danger-strong);
+  }
+
+  .badge[data-tone='primary'] {
+    background-color: var(--color-primary-soft);
+    color: var(--color-primary-strong);
+  }
+
+  .alert {
+    display: flex;
+    gap: 0.75rem;
+    padding: 1rem;
+    border: 1px solid var(--color-info-border);
+    border-radius: var(--radius-lg);
+    background-color: var(--color-info-soft);
+    color: var(--color-info-fg);
+    font-size: var(--text-small);
+    line-height: var(--text-small--line-height);
+  }
+
+  .alert [data-icon] {
+    margin-top: 0.125rem;
+    color: var(--color-info-strong);
+  }
+
+  .alert[data-tone='success'] {
+    border-color: var(--color-success-border);
+    background-color: var(--color-success-soft);
+    color: var(--color-success-fg);
+  }
+
+  .alert[data-tone='success'] [data-icon] {
+    color: var(--color-success-strong);
+  }
+
+  .alert[data-tone='warning'] {
+    border-color: var(--color-warning-border);
+    background-color: var(--color-warning-soft);
+    color: var(--color-warning-fg);
+  }
+
+  .alert[data-tone='warning'] [data-icon] {
+    color: var(--color-warning-strong);
+  }
+
+  .alert[data-tone='danger'] {
+    border-color: var(--color-danger-border);
+    background-color: var(--color-danger-soft);
+    color: var(--color-danger-fg);
+  }
+
+  .alert[data-tone='danger'] [data-icon] {
+    color: var(--color-danger-strong);
+  }
+
+  /* Barre de progression : le remplissage glisse (translate) au lieu de changer de largeur. */
+  .progress {
+    position: relative;
+    height: 0.5rem;
+    overflow: hidden;
+    border-radius: 9999px;
+    background-color: var(--color-fill-strong);
+  }
+
+  .progress-fill {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-glow-alt));
+    translate: calc((var(--progress, 0) - 1) * 100%) 0;
+    transition: translate var(--transition-duration-complex) var(--ease-out);
+  }
+
+  .progress[data-indeterminate] .progress-fill {
+    width: 40%;
+    translate: -100% 0;
+    animation: indeterminate 1400ms var(--ease-in-out) infinite;
+  }
+
+  @keyframes indeterminate {
+    to {
+      translate: 250% 0;
+    }
+  }
+
+  /* --- Bulle d'aide --------------------------------------------------------------------- */
+  /* Affichée au survol (après un court délai) ou au focus clavier ; jamais seule porteuse
+   * d'une information (le bouton a aussi un libellé accessible). */
+  .tooltip-anchor {
+    position: relative;
+    display: inline-flex;
+  }
+
+  .tooltip {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    left: 50%;
+    z-index: 60;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    background-color: var(--color-fg);
+    color: var(--color-canvas);
+    font-size: var(--text-caption);
+    line-height: 1rem;
+    font-weight: 500;
+    white-space: nowrap;
+    box-shadow: var(--elevation-md);
+    opacity: 0;
+    translate: -50% calc(var(--motion-distance-md) * -0.5);
+    pointer-events: none;
+    transition-property: opacity, translate;
+    transition-duration: var(--transition-duration-micro);
+    transition-timing-function: var(--ease-out);
+  }
+
+  .tooltip[data-align='end'] {
+    left: auto;
+    right: 0;
+    translate: 0 calc(var(--motion-distance-md) * -0.5);
+  }
+
+  @media (hover: hover) {
+    .tooltip-anchor:hover .tooltip {
+      opacity: 1;
+      translate: -50% 0;
+      transition-duration: var(--transition-duration-component);
+      transition-delay: 400ms;
+    }
+
+    .tooltip-anchor:hover .tooltip[data-align='end'] {
+      translate: 0 0;
+    }
+  }
+
+  .tooltip-anchor:has(:focus-visible) .tooltip {
+    opacity: 1;
+    translate: -50% 0;
+  }
+
+  .tooltip-anchor:has(:focus-visible) .tooltip[data-align='end'] {
+    translate: 0 0;
+  }
+
+  /* --- Fenêtre modale ------------------------------------------------------------------- */
+  .dialog-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 1rem;
+    background-color: color-mix(in oklab, var(--color-zinc-950) 55%, transparent);
+    backdrop-filter: blur(4px);
+  }
+
+  @media (min-width: 40rem) {
+    .dialog-overlay {
+      align-items: center;
+    }
+  }
+
+  .dialog-panel {
+    width: 100%;
+    max-width: var(--container-dialog);
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+    padding: 1.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    background-color: var(--color-surface);
+    box-shadow: var(--elevation-lg);
+  }
+
+  .dialog-overlay[data-state='open'] {
+    animation: fade-in var(--transition-duration-component) var(--ease-out) both;
+  }
+
+  .dialog-overlay[data-state='open'] .dialog-panel {
+    animation: surface-in var(--transition-duration-page) var(--ease-out) both;
+  }
+
+  .dialog-overlay[data-state='closed'] {
+    animation: fade-out var(--transition-duration-micro) var(--ease-in) both;
+  }
+
+  .dialog-overlay[data-state='closed'] .dialog-panel {
+    animation: surface-out var(--transition-duration-micro) var(--ease-in) both;
+  }
+
+  /* --- Notifications (toasts) ----------------------------------------------------------- */
+  .toast-region {
+    position: fixed;
+    inset-inline: 1rem;
+    bottom: 1rem;
+    z-index: 80;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    pointer-events: none;
+  }
+
+  @media (min-width: 40rem) {
+    .toast-region {
+      inset-inline: auto;
+      right: 1.5rem;
+      bottom: 1.5rem;
+      width: 24rem;
+      align-items: flex-end;
+    }
+  }
+
+  .toast {
+    display: flex;
+    width: 100%;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background-color: var(--color-surface);
+    box-shadow: var(--elevation-lg);
+    pointer-events: auto;
+  }
+
+  .toast[data-state='open'] {
+    animation: surface-in var(--transition-duration-component) var(--ease-out) both;
+  }
+
+  .toast[data-state='closed'] {
+    animation: surface-out var(--transition-duration-micro) var(--ease-in) both;
+  }
+
+  @keyframes fade-out {
+    to {
+      opacity: 0;
+    }
+  }
+
+  @keyframes surface-in {
+    from {
+      opacity: 0;
+      translate: 0 var(--motion-distance-md);
+      scale: var(--motion-scale-from);
+    }
+  }
+
+  @keyframes surface-out {
+    to {
+      opacity: 0;
+      scale: var(--motion-scale-from);
+    }
+  }
+
+  /* --- Liste déroulante (popover) ------------------------------------------------------- */
+  .popover {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background-color: var(--color-surface);
+    box-shadow: var(--elevation-lg);
+    transform-origin: top;
+    animation: popover-in var(--transition-duration-component) var(--ease-out) both;
+  }
+
+  @keyframes popover-in {
+    from {
+      opacity: 0;
+      translate: 0 calc(var(--motion-distance-md) * -0.5);
+      scale: 1 var(--motion-scale-from);
+    }
+  }
+
+  /* --- Accordéon (details/summary natif) ------------------------------------------------ */
+  .disclosure > summary {
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .disclosure > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .disclosure [data-icon='chevron'] {
+    transition: rotate var(--transition-duration-component) var(--ease-out);
+  }
+
+  .disclosure[open] [data-icon='chevron'] {
+    rotate: 180deg;
+  }
+
+  /* Ouverture animée dans les navigateurs qui le permettent ; instantanée ailleurs. */
+  .disclosure::details-content {
+    block-size: 0;
+    overflow-y: clip;
+    opacity: 0;
+    transition:
+      block-size var(--transition-duration-component) var(--ease-out),
+      opacity var(--transition-duration-component) var(--ease-out),
+      content-visibility var(--transition-duration-component) allow-discrete;
+  }
+
+  .disclosure[open]::details-content {
+    block-size: auto;
+    opacity: 1;
+  }
+
+  /* --- Onglets -------------------------------------------------------------------------- */
+  .tabs-list {
+    display: flex;
+    gap: 0.25rem;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--color-border);
+    scrollbar-width: none;
+  }
+
+  .tab {
+    position: relative;
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    gap: 0.5rem;
+    padding-inline: 0.75rem;
+    color: var(--color-fg-muted);
+    font-size: var(--text-small);
+    font-weight: 500;
+    white-space: nowrap;
+    transition: color var(--transition-duration-hover) var(--ease-out);
+  }
+
+  .tab:hover,
+  .tab[aria-selected='true'] {
+    color: var(--color-fg);
+  }
+
+  .tab::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0.75rem;
+    bottom: -1px;
+    height: 2px;
+    border-radius: 9999px;
+    background-color: var(--color-primary);
+    scale: 0 1;
+    transition: scale var(--transition-duration-component) var(--ease-out);
+  }
+
+  .tab[aria-selected='true']::after {
+    scale: 1 1;
+  }
+
+  /* --- En-tête du site ------------------------------------------------------------------ */
+  /* Intégré à la page en haut, puis fond translucide et flou dès que la page défile. */
+  .site-header {
+    position: fixed;
+    inset-inline: 0;
+    top: 0;
+    z-index: 50;
+    border-bottom: 1px solid transparent;
+    view-transition-name: site-header;
+    transition-property: background-color, border-color, box-shadow;
+    transition-duration: var(--transition-duration-component);
+    transition-timing-function: var(--ease-out);
+  }
+
+  .site-header[data-scrolled],
+  .site-header[data-menu-open] {
+    border-bottom-color: var(--color-border);
+    background-color: color-mix(in oklab, var(--color-canvas) 80%, transparent);
+    box-shadow: var(--elevation-xs);
+    backdrop-filter: blur(14px) saturate(1.6);
+  }
+
+  .site-header[data-menu-open] {
+    background-color: var(--color-canvas);
+  }
+
+  @supports not (backdrop-filter: blur(1px)) {
+    .site-header[data-scrolled] {
+      background-color: var(--color-canvas);
+    }
+  }
+
+  .nav-link {
+    position: relative;
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    padding-inline: 0.75rem;
+    border-radius: 9999px;
+    color: var(--color-fg-muted);
+    font-size: var(--text-small);
+    font-weight: 500;
+    transition-property: color, background-color;
+    transition-duration: var(--transition-duration-hover);
+    transition-timing-function: var(--ease-out);
+  }
+
+  .nav-link:hover {
+    background-color: var(--color-fill);
+    color: var(--color-fg);
+  }
+
+  /* Repère de la section ou de la page courante : un trait, pas seulement une couleur. */
+  .nav-link[aria-current] {
+    color: var(--color-fg);
+  }
+
+  .nav-link[aria-current]::after {
+    content: '';
+    position: absolute;
+    bottom: 0.375rem;
+    left: 50%;
+    width: 1rem;
+    height: 2px;
+    border-radius: 9999px;
+    background-color: var(--color-primary);
+    translate: -50% 0;
+    animation: var(--animate-pop);
+  }
+
+  /* Bouton du menu mobile : les deux icônes se croisent en tournant légèrement. */
+  .menu-toggle [data-icon] {
+    position: absolute;
+    transition-property: opacity, rotate, scale;
+    transition-duration: var(--transition-duration-component);
+    transition-timing-function: var(--ease-out);
+  }
+
+  .menu-toggle [data-icon='close'],
+  .menu-toggle[aria-expanded='true'] [data-icon='menu'] {
+    opacity: 0;
+    rotate: -45deg;
+    scale: 0.6;
+  }
+
+  .menu-toggle[aria-expanded='true'] [data-icon='close'] {
+    opacity: 1;
+    rotate: 0deg;
+    scale: 1;
+  }
+
+  /* Menu mobile plein écran : fondu et léger glissement, liens qui arrivent en cascade. */
+  .mobile-menu {
+    position: fixed;
+    inset: 4rem 0 0;
+    z-index: 49;
+    overflow-y: auto;
+    padding: 1.5rem 1rem 2rem;
+    background-color: var(--color-canvas);
+    opacity: 0;
+    translate: 0 calc(var(--motion-distance-md) * -1);
+    visibility: hidden;
+    transition:
+      opacity var(--transition-duration-component) var(--ease-out),
+      translate var(--transition-duration-component) var(--ease-out),
+      visibility 0s linear var(--transition-duration-component);
+  }
+
+  .mobile-menu[data-open] {
+    opacity: 1;
+    translate: none;
+    visibility: visible;
+    transition:
+      opacity var(--transition-duration-component) var(--ease-out),
+      translate var(--transition-duration-component) var(--ease-out),
+      visibility 0s;
+  }
+
+  .mobile-menu-item {
+    opacity: 0;
+    translate: 0 var(--motion-distance-md);
+    transition-property: opacity, translate;
+    transition-duration: var(--transition-duration-component);
+    transition-timing-function: var(--ease-out);
+  }
+
+  .mobile-menu[data-open] .mobile-menu-item {
+    opacity: 1;
+    translate: none;
+    transition-delay: calc(var(--i, 0) * var(--stagger-tight) + 60ms);
+  }
+
+  /* --- Étapes du parcours --------------------------------------------------------------- */
+  /* Nommées pour la transition d'écran : elles restent en place d'une étape à l'autre. */
+  .flow-steps {
+    view-transition-name: flow-steps;
+  }
+
+  /* --- Récit « Comment ça marche » ------------------------------------------------------ */
+  .story-screen {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    scale: var(--motion-scale-from);
+    pointer-events: none;
+    transition-property: opacity, scale;
+    transition-duration: var(--transition-duration-page);
+    transition-timing-function: var(--ease-out);
+  }
+
+  .story-screen[data-active] {
+    opacity: 1;
+    scale: 1;
+  }
+
+  .story-step-marker {
+    transition-property: background-color, border-color, color, scale;
+    transition-duration: var(--transition-duration-component);
+    transition-timing-function: var(--ease-out);
+  }
+
+  /* Sur grand écran, chaque étape occupe assez de hauteur pour que le défilement fasse
+   * avancer le récit ; sur mobile, les étapes s'enchaînent normalement. */
+  @media (min-width: 64rem) {
+    .story-step {
+      display: flex;
+      min-height: 60vh;
+      align-items: center;
+    }
+
+    /* La première étape suit directement l'introduction de la section. */
+    .story-step:first-child {
+      align-items: flex-start;
+    }
+  }
+
+  /* --- Accueil -------------------------------------------------------------------------- */
+  /* Halo qui suit le curseur dans le héros (variables posées par pointerField). Déplacé par
+   * `translate` : aucune peinture de la page entière à chaque mouvement. */
+  .cursor-glow {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 40rem;
+    height: 40rem;
+    border-radius: 9999px;
+    background: radial-gradient(
+      closest-side,
+      color-mix(in oklab, var(--color-glow) 16%, transparent),
+      transparent
+    );
+    opacity: 0;
+    translate: calc(var(--gx, 60vw) - 20rem) calc(var(--gy, 20rem) - 20rem);
+    transition:
+      translate var(--transition-duration-complex) var(--ease-out),
+      opacity var(--transition-duration-page) var(--ease-out);
+    pointer-events: none;
+  }
+
+  @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    :hover > .cursor-glow,
+    :hover > * > .cursor-glow {
+      opacity: 1;
+    }
+  }
+
+  /* Appel final : panneau de couleur principale, profondeur par dégradés. */
+  .cta-panel {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    border-radius: var(--radius-2xl);
+    background:
+      radial-gradient(70% 90% at 10% 0%, oklch(100% 0 0 / 0.2), transparent 60%),
+      radial-gradient(60% 80% at 100% 100%, oklch(0% 0 0 / 0.25), transparent 60%),
+      linear-gradient(135deg, var(--color-indigo-600), var(--color-violet-700));
+    color: var(--color-white);
+    box-shadow: var(--elevation-lg);
+  }
+
+  .cta-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-image: radial-gradient(oklch(100% 0 0 / 0.16) 1px, transparent 1px);
+    background-size: 1.5rem 1.5rem;
+    mask-image: radial-gradient(ellipse at center, black 10%, transparent 70%);
+  }
+
+  .cta-muted {
+    color: oklch(100% 0 0 / 0.85);
+  }
+
+  /* Pastille d'initiales des comptes fictifs (illustrations et démonstration). */
+  .avatar {
+    display: inline-flex;
+    width: 2.25rem;
+    height: 2.25rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    font-size: var(--text-caption);
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .avatar[data-tone='0'] {
+    background-color: var(--color-primary-soft);
+    color: var(--color-primary-strong);
+  }
+
+  .avatar[data-tone='1'] {
+    background-color: var(--color-success-soft);
+    color: var(--color-success-strong);
+  }
+
+  .avatar[data-tone='2'] {
+    background-color: var(--color-warning-soft);
+    color: var(--color-warning-strong);
+  }
+
+  .avatar[data-tone='3'] {
+    background-color: var(--color-info-soft);
+    color: var(--color-info-strong);
+  }
+
+  /* Ligne de la démonstration ou d'un aperçu : retirée = barrée et estompée. */
+  .demo-row {
+    transition-property: opacity, background-color;
+    transition-duration: var(--transition-duration-component);
+    transition-timing-function: var(--ease-out);
+  }
+
+  .demo-row[data-removed] {
+    opacity: 0.45;
+  }
+
+  .demo-row[data-removed] [data-author] {
+    text-decoration: line-through;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .checkbox::before {
+      scale: 1;
+    }
+  }
+}

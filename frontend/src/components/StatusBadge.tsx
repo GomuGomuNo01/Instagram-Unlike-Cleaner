@@ -5,7 +5,7 @@ import { Badge } from './ui'
 const jobTones = {
   created: 'neutral',
   collecting: 'info',
-  ready: 'info',
+  ready: 'primary',
   running: 'info',
   paused: 'warning',
   completed: 'success',
@@ -14,8 +14,8 @@ const jobTones = {
 } as const satisfies Record<JobStatus, string>
 
 const itemTones = {
-  pending: 'info',
-  selected: 'info',
+  pending: 'primary',
+  selected: 'primary',
   excluded: 'neutral',
   done: 'success',
   failed: 'danger',

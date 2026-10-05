@@ -1,103 +1,155 @@
-import { useEffect, useState } from 'react'
-import { Link, NavLink } from 'react-router'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { NavLink, useLocation } from 'react-router'
 
-import { CloseIcon, MenuIcon } from './icons'
-import { navigation } from './navigation'
+import { useScrollLock, useScrolled, useSectionSpy } from '../lib/motion'
+import { ArrowRightIcon, CloseIcon, MenuIcon } from './icons'
+import { jobsLink, sectionIds, sections } from './navigation'
 import { ThemeToggle } from './ThemeToggle'
-import { ButtonLink } from './ui'
+import { AppLink, ButtonLink } from './ui'
 
 export function Logo() {
   return (
-    <Link to="/" className="flex min-h-11 items-center gap-3 rounded-lg font-semibold">
-      <img src="/favicon.svg" alt="" className="h-8 w-8" width={32} height={32} />
-      <span>
+    <AppLink
+      to="/"
+      className="group inline-flex min-h-11 items-center gap-3 rounded-full font-semibold text-fg"
+    >
+      <img
+        src="/favicon.svg"
+        alt=""
+        width={32}
+        height={32}
+        className="h-8 w-8 transition-transform duration-component ease-emphasized motion-safe:group-hover:-rotate-6 motion-safe:group-hover:scale-105"
+      />
+      <span className="text-body tracking-tight">
         IUC <span className="sr-only">: retour à l’accueil</span>
       </span>
-    </Link>
+    </AppLink>
   )
 }
 
-const linkClass = ({ isActive }: { isActive: boolean }) =>
-  `rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-    isActive
-      ? 'text-indigo-700 dark:text-indigo-300'
-      : 'text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white'
-  }`
+const mobileItems = [...sections.map((s) => ({ to: `/#${s.id}`, label: s.label })), jobsLink]
 
-/** En-tête fixe : logo, menu essentiel, thème et action principale ; menu tactile sur mobile. */
+/** En-tête : logo, menu limité aux sections utiles, thème et action principale. Intégré à
+ * la page en haut, il prend un fond translucide dès que la page défile. Sur mobile, un menu
+ * plein écran aux grandes cibles tactiles. */
 export function Header() {
+  const { pathname } = useLocation()
+  const scrolled = useScrolled()
+  const current = useSectionSpy(pathname === '/' ? sectionIds : [])
   const [open, setOpen] = useState(false)
+  const [lastPath, setLastPath] = useState(pathname)
+  const toggleRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLElement>(null)
+  useScrollLock(open)
+
+  // Un changement d'écran referme le menu.
+  if (pathname !== lastPath) {
+    setLastPath(pathname)
+    setOpen(false)
+  }
 
   useEffect(() => {
     if (!open) return
+    menuRef.current?.querySelector<HTMLElement>('a')?.focus()
+    // Le reste de la page devient inactif tant que le menu le recouvre.
+    const covered = [...document.querySelectorAll<HTMLElement>('main, footer')]
+    covered.forEach((element) => (element.inert = true))
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false)
+      if (event.key !== 'Escape') return
+      setOpen(false)
+      toggleRef.current?.focus()
     }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    return () => {
+      covered.forEach((element) => (element.inert = false))
+      window.removeEventListener('keydown', onKey)
+    }
   }, [open])
 
   const close = () => setOpen(false)
   return (
-    <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/90 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
-      <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:px-6">
-        <Logo />
-        <nav aria-label="Navigation principale" className="ml-6 hidden items-center gap-1 md:flex">
-          {navigation.map((item) =>
-            // Les ancres de l'accueil ne sont pas des pages : pas d'état « actif » trompeur.
-            item.to.includes('#') ? (
-              <Link key={item.to} to={item.to} className={linkClass({ isActive: false })}>
-                {item.label}
-              </Link>
-            ) : (
-              <NavLink key={item.to} to={item.to} className={linkClass}>
-                {item.label}
-              </NavLink>
-            ),
-          )}
-        </nav>
-        <div className="ml-auto flex items-center gap-2">
-          <ThemeToggle />
-          <ButtonLink to="/commencer" className="hidden md:inline-flex">
-            Commencer
-          </ButtonLink>
-          <button
-            type="button"
-            onClick={() => setOpen((value) => !value)}
-            aria-expanded={open}
-            aria-controls="menu-mobile"
-            aria-label={open ? 'Fermer le menu' : 'Ouvrir le menu'}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-zinc-700 hover:bg-zinc-100 active:bg-zinc-200 md:hidden dark:text-zinc-300 dark:hover:bg-zinc-800"
+    <>
+      <header
+        className="site-header"
+        data-scrolled={scrolled || undefined}
+        data-menu-open={open || undefined}
+      >
+        <div className="mx-auto flex h-16 w-full max-w-page items-center gap-4 px-4 sm:px-6 lg:px-8">
+          <Logo />
+          <nav
+            aria-label="Navigation principale"
+            className="ml-8 hidden items-center gap-1 lg:flex"
           >
-            {open ? <CloseIcon /> : <MenuIcon />}
-          </button>
-        </div>
-      </div>
-
-      {open && (
-        <nav
-          id="menu-mobile"
-          aria-label="Menu"
-          className="border-t border-zinc-200 px-4 pt-2 pb-6 md:hidden dark:border-zinc-800"
-        >
-          <ul className="flex flex-col">
-            {navigation.map((item) => (
-              <li key={item.to}>
-                <NavLink
-                  to={item.to}
-                  onClick={close}
-                  className="flex min-h-12 items-center rounded-lg px-3 text-base font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                >
-                  {item.label}
-                </NavLink>
-              </li>
+            {sections.map((section) => (
+              <AppLink
+                key={section.id}
+                to={`/#${section.id}`}
+                aria-current={current === section.id ? 'location' : undefined}
+                className="nav-link"
+              >
+                {section.label}
+              </AppLink>
             ))}
-          </ul>
-          <ButtonLink to="/commencer" onClick={close} size="lg" className="mt-4 w-full">
+          </nav>
+          <div className="ml-auto flex items-center gap-2">
+            <NavLink to={jobsLink.to} viewTransition className="nav-link hidden lg:inline-flex">
+              {jobsLink.label}
+            </NavLink>
+            <ThemeToggle />
+            <ButtonLink to="/commencer" className="hidden sm:inline-flex">
+              Commencer
+            </ButtonLink>
+            <button
+              ref={toggleRef}
+              type="button"
+              onClick={() => setOpen((value) => !value)}
+              aria-expanded={open}
+              aria-controls="menu-mobile"
+              aria-label={open ? 'Fermer le menu' : 'Ouvrir le menu'}
+              className="menu-toggle btn btn-ghost btn-icon lg:hidden"
+            >
+              <MenuIcon data-icon="menu" />
+              <CloseIcon data-icon="close" />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <nav
+        ref={menuRef}
+        id="menu-mobile"
+        aria-label="Menu"
+        data-open={open || undefined}
+        inert={!open}
+        className="mobile-menu lg:hidden"
+      >
+        <ul className="flex flex-col gap-1">
+          {mobileItems.map((item, index) => (
+            <li
+              key={item.to}
+              className="mobile-menu-item"
+              style={{ '--i': index } as CSSProperties}
+            >
+              <AppLink
+                to={item.to}
+                onClick={close}
+                className="flex min-h-14 items-center justify-between gap-4 rounded-lg px-3 text-h3 transition-colors hover:bg-fill"
+              >
+                {item.label}
+                <ArrowRightIcon className="h-5 w-5 text-fg-subtle" />
+              </AppLink>
+            </li>
+          ))}
+        </ul>
+        <div
+          className="mobile-menu-item mt-8"
+          style={{ '--i': mobileItems.length } as CSSProperties}
+        >
+          <ButtonLink to="/commencer" onClick={close} size="lg" className="w-full">
             Commencer le nettoyage
           </ButtonLink>
-        </nav>
-      )}
-    </header>
+        </div>
+      </nav>
+    </>
   )
 }

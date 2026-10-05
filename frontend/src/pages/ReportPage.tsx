@@ -3,16 +3,30 @@ import { useNavigate, useParams } from 'react-router'
 
 import { api, describeError, errorMessage, unwrap } from '../api/client'
 import { getToken, TOKEN_HEADER } from '../api/token'
-import type { JobReport } from '../api/types'
+import type { JobReport, ReportLine } from '../api/types'
 import { parseJobId } from '../api/useJob'
-import { ConfirmDialog } from '../components/ConfirmDialog'
+import { Avatar } from '../components/Avatar'
 import { FlowSteps } from '../components/FlowSteps'
 import { AppPage } from '../components/Layout'
 import { DownloadIcon } from '../components/icons'
 import { ItemStatusBadge, JobStatusBadge } from '../components/StatusBadge'
-import { Alert, Button, Card, PageHeader, Spinner, Stat } from '../components/ui'
+import {
+  Alert,
+  Button,
+  Card,
+  ConfirmDialog,
+  PageHeader,
+  Skeleton,
+  SkeletonBlock,
+  Stat,
+  Tabs,
+  useToast,
+} from '../components/ui'
 import { formatDateTime, formatDuration, plural } from '../lib/format'
 import { NotFoundPage } from './NotFoundPage'
+
+const SHOWN_LINES = 100 // au-delà, le CSV contient la liste complète
+const SUCCESS_MS = 2500 // durée de l'état « téléchargé » du bouton
 
 export function ReportPage() {
   const jobId = parseJobId(useParams().jobId)
@@ -21,14 +35,15 @@ export function ReportPage() {
 
 type Danger = 'session' | 'data'
 
-/** Rapport final : bilan, échecs, export CSV et suppression des données locales. */
+/** Rapport final : bilan, likes à vérifier ou retirés, export CSV et données locales. */
 function Report({ jobId }: { jobId: number }) {
   const navigate = useNavigate()
+  const toast = useToast()
   const [report, setReport] = useState<JobReport | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
   const [danger, setDanger] = useState<Danger | null>(null)
   const [busy, setBusy] = useState<'csv' | Danger | null>(null)
+  const [downloaded, setDownloaded] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -44,6 +59,12 @@ function Report({ jobId }: { jobId: number }) {
       active = false
     }
   }, [jobId])
+
+  useEffect(() => {
+    if (!downloaded) return
+    const timer = window.setTimeout(() => setDownloaded(false), SUCCESS_MS)
+    return () => window.clearTimeout(timer)
+  }, [downloaded])
 
   const downloadCsv = async () => {
     setBusy('csv')
@@ -62,6 +83,8 @@ function Report({ jobId }: { jobId: number }) {
       link.download = `rapport-${jobId}.csv`
       link.click()
       URL.revokeObjectURL(url)
+      setDownloaded(true)
+      toast({ title: 'Rapport téléchargé', description: `Fichier rapport-${jobId}.csv` })
     } finally {
       setBusy(null)
     }
@@ -72,10 +95,14 @@ function Report({ jobId }: { jobId: number }) {
     try {
       if (target === 'session') {
         await unwrap(api.DELETE('/api/session'))
-        setNotice('Profil du navigateur supprimé : IUC n’est plus connecté à Instagram.')
+        toast({
+          title: 'Déconnecté d’Instagram',
+          description: 'Le profil du navigateur est supprimé. Tes nettoyages sont conservés.',
+        })
       } else {
         await unwrap(api.DELETE('/api/data'))
-        navigate('/', { replace: true })
+        toast({ title: 'Données locales supprimées' })
+        navigate('/', { replace: true, viewTransition: true })
       }
     } catch (failure) {
       setError(errorMessage(failure))
@@ -89,7 +116,15 @@ function Report({ jobId }: { jobId: number }) {
     return (
       <AppPage>
         <FlowSteps current={5} />
-        {error ? <Alert tone="danger">{error}</Alert> : <Spinner label="Chargement du rapport…" />}
+        {error ? (
+          <Alert tone="danger">{error}</Alert>
+        ) : (
+          <SkeletonBlock label="Chargement du rapport…">
+            <Skeleton className="h-10 w-2/3 max-w-text" />
+            <Skeleton className="mt-4 h-5 w-1/2 max-w-text" />
+            <Skeleton className="mt-8 h-40 w-full rounded-xl" />
+          </SkeletonBlock>
+        )}
       </AppPage>
     )
   }
@@ -97,6 +132,7 @@ function Report({ jobId }: { jobId: number }) {
   const counts = report.par_statut
   const toProcess = (counts.pending ?? 0) + (counts.selected ?? 0)
   const problems = report.likes.filter((line) => ['failed', 'skipped'].includes(line.statut))
+  const removed = report.likes.filter((line) => line.statut === 'done')
   return (
     <AppPage>
       <FlowSteps current={5} />
@@ -108,16 +144,21 @@ function Report({ jobId }: { jobId: number }) {
             : 'Ce nettoyage n’a pas encore été lancé.'
         }
         actions={
-          <Button variant="secondary" onClick={() => void downloadCsv()} loading={busy === 'csv'}>
-            <DownloadIcon />
-            Télécharger le CSV
+          <Button
+            variant="secondary"
+            onClick={() => void downloadCsv()}
+            loading={busy === 'csv'}
+            success={downloaded}
+            icon={<DownloadIcon className="h-4 w-4" />}
+          >
+            {downloaded ? 'CSV téléchargé' : 'Télécharger le CSV'}
           </Button>
         }
       />
-      <div className="space-y-6">
-        <Card>
+      <div className="space-y-4">
+        <Card padding="lg">
           <JobStatusBadge status={report.statut} />
-          <dl className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-6">
+          <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             <Stat label="Ciblés" value={report.likes_cibles} />
             <Stat label="Retirés" value={counts.done ?? 0} />
             <Stat label="Échecs" value={counts.failed ?? 0} />
@@ -128,34 +169,35 @@ function Report({ jobId }: { jobId: number }) {
         </Card>
 
         {error && <Alert tone="danger">{error}</Alert>}
-        {notice && <Alert tone="success">{notice}</Alert>}
 
-        <Card>
-          <h2 className="text-h3">Échecs et likes introuvables</h2>
-          {problems.length === 0 ? (
-            <p className="text-small mt-2">Aucun : tous les likes traités ont été retirés.</p>
-          ) : (
-            <ul className="mt-4 divide-y divide-zinc-200 dark:divide-zinc-800">
-              {problems.map((line) => (
-                <li key={line.identifiant} className="flex flex-wrap items-center gap-3 py-3">
-                  <span className="font-medium">
-                    {line.auteur ? `@${line.auteur}` : 'Auteur inconnu'}
-                  </span>
-                  <span className="text-small">
-                    {line.type}
-                    {line.partagee_le && `, partagée le ${line.partagee_le}`}, n° {line.rang}
-                  </span>
-                  <ItemStatusBadge status={line.statut} />
-                  {line.detail && <span className="text-small w-full">{line.detail}</span>}
-                </li>
-              ))}
-            </ul>
-          )}
+        <Card padding="lg">
+          <Tabs
+            label="Détail des likes"
+            items={[
+              {
+                id: 'verifier',
+                label: 'À vérifier',
+                count: problems.length,
+                content: (
+                  <ReportLines
+                    lines={problems}
+                    empty="Aucun : tous les likes traités ont été retirés."
+                  />
+                ),
+              },
+              {
+                id: 'retires',
+                label: 'Retirés',
+                count: removed.length,
+                content: <ReportLines lines={removed} empty="Aucun like n’a encore été retiré." />,
+              },
+            ]}
+          />
         </Card>
 
-        <Card className="border-red-200 dark:border-red-900/60">
-          <h2 className="text-h3">Données locales</h2>
-          <p className="text-small mt-1">
+        <Card padding="lg" className="border-danger-border">
+          <h2 className="text-h3 text-fg">Données locales</h2>
+          <p className="mt-1 text-small text-fg-muted">
             Tout est stocké sur ton ordinateur, dans le dossier de données d’IUC.
           </p>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
@@ -188,5 +230,37 @@ function Report({ jobId }: { jobId: number }) {
           : 'Le profil du navigateur est supprimé : il faudra te reconnecter à Instagram. Tes nettoyages et rapports sont conservés.'}
       </ConfirmDialog>
     </AppPage>
+  )
+}
+
+function ReportLines({ lines, empty }: { lines: ReportLine[]; empty: string }) {
+  if (lines.length === 0) return <p className="text-small text-fg-muted">{empty}</p>
+  return (
+    <>
+      <ul className="divide-y divide-border">
+        {lines.slice(0, SHOWN_LINES).map((line) => (
+          <li key={line.identifiant} className="flex flex-wrap items-center gap-3 py-3">
+            <Avatar author={line.auteur} />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-medium text-fg">
+                {line.auteur ? `@${line.auteur}` : 'Auteur inconnu'}
+              </span>
+              <span className="block text-small text-fg-muted">
+                {line.type}
+                {line.partagee_le && `, partagée le ${line.partagee_le}`}, n° {line.rang}
+              </span>
+              {line.detail && <span className="block text-small text-fg-muted">{line.detail}</span>}
+            </span>
+            <ItemStatusBadge status={line.statut} />
+          </li>
+        ))}
+      </ul>
+      {lines.length > SHOWN_LINES && (
+        <p className="mt-4 text-small text-fg-muted">
+          {SHOWN_LINES} premiers likes affichés sur {lines.length} : le CSV contient la liste
+          complète.
+        </p>
+      )}
+    </>
   )
 }

@@ -1,36 +1,55 @@
 import type { RouteObject } from 'react-router'
 
-import { Layout } from './components/Layout'
+import { AppFallback, Layout } from './components/Layout'
 import { RequireConsent } from './components/RequireConsent'
 import { HomePage } from './pages/HomePage'
-import {
-  ConsentPage,
-  FiltersPage,
-  JobsPage,
-  LoginPage,
-  PreviewPage,
-  ReportPage,
-  TrackingPage,
-} from './pages/lazyPages'
 import { NotFoundPage } from './pages/NotFoundPage'
+
+// Les écrans de l'application sont chargés à la demande : la page d'accueil reste légère.
+// Le routeur attend l'écran avant de l'afficher, ce qui garde la transition fluide ; une
+// fine barre signale l'attente si la connexion est lente.
 
 /** Parcours : accueil, avertissement, connexion, critères, aperçu, suivi, rapport. */
 export const routes: RouteObject[] = [
   {
     path: '/',
     element: <Layout />,
+    HydrateFallback: AppFallback,
     children: [
       { index: true, element: <HomePage /> },
-      { path: 'commencer', element: <ConsentPage /> },
+      {
+        path: 'commencer',
+        lazy: async () => ({ Component: (await import('./pages/ConsentPage')).ConsentPage }),
+      },
       {
         element: <RequireConsent />,
         children: [
-          { path: 'connexion', element: <LoginPage /> },
-          { path: 'filtres', element: <FiltersPage /> },
-          { path: 'nettoyages', element: <JobsPage /> },
-          { path: 'nettoyages/:jobId/apercu', element: <PreviewPage /> },
-          { path: 'nettoyages/:jobId/suivi', element: <TrackingPage /> },
-          { path: 'nettoyages/:jobId/rapport', element: <ReportPage /> },
+          {
+            path: 'connexion',
+            lazy: async () => ({ Component: (await import('./pages/LoginPage')).LoginPage }),
+          },
+          {
+            path: 'filtres',
+            lazy: async () => ({ Component: (await import('./pages/FiltersPage')).FiltersPage }),
+          },
+          {
+            path: 'nettoyages',
+            lazy: async () => ({ Component: (await import('./pages/JobsPage')).JobsPage }),
+          },
+          {
+            path: 'nettoyages/:jobId/apercu',
+            lazy: async () => ({ Component: (await import('./pages/PreviewPage')).PreviewPage }),
+          },
+          {
+            path: 'nettoyages/:jobId/suivi',
+            lazy: async () => ({
+              Component: (await import('./pages/TrackingPage')).TrackingPage,
+            }),
+          },
+          {
+            path: 'nettoyages/:jobId/rapport',
+            lazy: async () => ({ Component: (await import('./pages/ReportPage')).ReportPage }),
+          },
         ],
       },
       { path: '*', element: <NotFoundPage /> },

@@ -1,0 +1,200 @@
+/* Système de motion : règles partagées par toutes les animations.
+ *
+ * Principe : animer pour communiquer, pas pour décorer. Toutes les animations utilisent les
+ * mêmes durées, courbes et amplitudes (tokens.css). Seuls `transform`, `translate`, `scale`
+ * et `opacity` sont animés, pour rester fluides. Tout reste lisible et utilisable sans
+ * animation : les éléments ne sont masqués avant leur apparition que si le script de motion
+ * est actif (classe `motion-ready` sur <html>), et jamais en mouvement réduit. */
+
+@layer components {
+  /* --- Apparition au défilement --------------------------------------------------------- */
+  /* Hiérarchie temporelle : chaque élément attend `--reveal-order` × `--stagger` (titre 0 ms,
+   * description 80 ms, action 160 ms, illustration 240 ms…). */
+  @media (prefers-reduced-motion: no-preference) {
+    .motion-ready [data-reveal] {
+      opacity: 0;
+      translate: 0 var(--motion-distance-lg);
+      transition-property: opacity, translate, scale;
+      transition-duration: var(--transition-duration-complex);
+      transition-timing-function: var(--ease-out);
+      transition-delay: calc(var(--reveal-order, 0) * var(--stagger));
+    }
+
+    .motion-ready [data-reveal='fade'] {
+      translate: none;
+    }
+
+    .motion-ready [data-reveal='scale'] {
+      translate: 0 var(--motion-distance-md);
+      scale: var(--motion-scale-from);
+    }
+
+    .motion-ready [data-reveal][data-revealed] {
+      opacity: 1;
+      translate: none;
+      scale: none;
+    }
+  }
+
+  @media print {
+    [data-reveal] {
+      opacity: 1 !important;
+      translate: none !important;
+      scale: none !important;
+    }
+  }
+
+  /* --- Transitions entre écrans (View Transitions, navigateurs compatibles) ---------------- */
+  /* L'ancien écran s'efface très vite, le nouveau arrive en fondu avec un léger glissement :
+   * la page apparaît naturellement, sans faire attendre. L'en-tête et les étapes du parcours
+   * restent en place d'un écran à l'autre. */
+  @media (prefers-reduced-motion: no-preference) {
+    ::view-transition-old(root) {
+      animation: view-out var(--transition-duration-micro) var(--ease-in) both;
+    }
+
+    ::view-transition-new(root) {
+      animation: view-in var(--transition-duration-page) var(--ease-out) both;
+    }
+
+    ::view-transition-group(site-header),
+    ::view-transition-group(flow-steps) {
+      animation-duration: var(--transition-duration-component);
+      animation-timing-function: var(--ease-in-out);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+      animation: none !important;
+    }
+  }
+
+  @keyframes view-out {
+    to {
+      opacity: 0;
+    }
+  }
+
+  @keyframes view-in {
+    from {
+      opacity: 0;
+      translate: 0 var(--motion-distance-md);
+    }
+  }
+
+  /* --- Profondeur : parallaxe au curseur et au défilement ------------------------------- */
+  /* `--px` et `--py` (de -1 à 1) sont posés par usePointerField sur le conteneur, uniquement
+   * avec une souris et sans mouvement réduit. Chaque calque bouge selon sa profondeur. */
+  [data-depth] {
+    transform: translate3d(
+      calc(var(--px, 0) * var(--depth, 0) * 1px),
+      calc(var(--py, 0) * var(--depth, 0) * 1px),
+      0
+    );
+    transition: transform var(--transition-duration-complex) var(--ease-out);
+  }
+
+  /* Défilement : les calques d'arrière-plan glissent moins vite que le contenu. */
+  @supports (animation-timeline: scroll()) {
+    @media (prefers-reduced-motion: no-preference) {
+      [data-scroll-depth] {
+        animation: scroll-drift linear both;
+        animation-timeline: scroll(root);
+        animation-range: 0 100vh;
+      }
+    }
+  }
+
+  @keyframes scroll-drift {
+    to {
+      translate: 0 calc(var(--scroll-depth, 1) * -48px);
+    }
+  }
+
+  /* Attraction très légère d'un bouton vers le curseur (bureau uniquement, voir useMagnetic). */
+  .magnetic {
+    transform: translate3d(var(--magnet-x, 0px), var(--magnet-y, 0px), 0);
+    transition-property:
+      transform, translate, scale, background-color, border-color, color, box-shadow, opacity;
+  }
+
+  /* --- Indicateurs de chargement ---------------------------------------------------------- */
+  .skeleton {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-sm);
+    background-color: var(--color-surface-sunken);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .skeleton::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      translate: -100% 0;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        color-mix(in oklab, var(--color-canvas) 55%, transparent),
+        transparent
+      );
+      animation: shimmer 1600ms var(--ease-in-out) infinite;
+    }
+
+    /* Point « en direct » : signale une activité en cours, et seulement pendant celle-ci. */
+    .live-dot::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background-color: inherit;
+      animation: live-ping 1800ms var(--ease-out) infinite;
+    }
+  }
+
+  @keyframes shimmer {
+    to {
+      translate: 100% 0;
+    }
+  }
+
+  @keyframes live-ping {
+    from {
+      opacity: 0.6;
+      scale: 1;
+    }
+
+    to {
+      opacity: 0;
+      scale: 2.4;
+    }
+  }
+
+  /* Barre de navigation entre écrans : visible seulement si un écran met du temps à charger. */
+  .route-progress {
+    position: fixed;
+    inset-inline: 0;
+    top: 0;
+    z-index: 60;
+    height: 2px;
+    pointer-events: none;
+    transform-origin: left;
+    background: linear-gradient(90deg, var(--color-glow), var(--color-glow-alt));
+    opacity: 0;
+    scale: 0 1;
+    transition:
+      opacity var(--transition-duration-component) var(--ease-out),
+      scale var(--transition-duration-component) var(--ease-out);
+  }
+
+  .route-progress[data-active] {
+    opacity: 1;
+    scale: 0.85 1;
+    transition:
+      opacity var(--transition-duration-micro) var(--ease-out) 150ms,
+      scale 4s var(--ease-out) 150ms;
+  }
+}

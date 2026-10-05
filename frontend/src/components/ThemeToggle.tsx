@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 
 import { applyTheme, saveTheme, storedTheme, type ThemeChoice } from '../lib/preferences'
 import { MonitorIcon, MoonIcon, SunIcon } from './icons'
+import { Tooltip } from './ui'
 
 const labels: Record<ThemeChoice, string> = {
   system: 'thème du système',
@@ -25,16 +26,16 @@ export function ThemeToggle() {
   }, [theme])
 
   const Icon = icons[theme]
-  const label = `Affichage : ${labels[theme]}. Passer au ${labels[next[theme]]}`
   return (
-    <button
-      type="button"
-      onClick={() => setTheme(next[theme])}
-      aria-label={label}
-      title={label}
-      className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-zinc-700 transition-colors hover:bg-zinc-100 active:bg-zinc-200 dark:text-zinc-300 dark:hover:bg-zinc-800"
-    >
-      <Icon />
-    </button>
+    <Tooltip label={`Affichage : ${labels[theme]}`} align="end">
+      <button
+        type="button"
+        onClick={() => setTheme(next[theme])}
+        aria-label={`Affichage : ${labels[theme]}. Passer au ${labels[next[theme]]}`}
+        className="btn btn-ghost btn-icon"
+      >
+        <Icon key={theme} className="h-5 w-5 animate-pop" />
+      </button>
+    </Tooltip>
   )
 }

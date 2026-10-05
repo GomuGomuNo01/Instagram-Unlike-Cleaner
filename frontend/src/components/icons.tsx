@@ -65,6 +65,27 @@ export const AlertIcon = (props: IconProps) => (
   </Icon>
 )
 
+export const InfoIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 11v5M12 8h.01" />
+  </Icon>
+)
+
+export const CheckCircleIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="m8.5 12.5 2.5 2.5 4.5-5" />
+  </Icon>
+)
+
+export const XCircleIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="m9 9 6 6M15 9l-6 6" />
+  </Icon>
+)
+
 export const CheckIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d="m5 12.5 4.5 4.5L19 7.5" />
@@ -74,6 +95,12 @@ export const CheckIcon = (props: IconProps) => (
 export const ArrowRightIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d="M5 12h14M13 6l6 6-6 6" />
+  </Icon>
+)
+
+export const ArrowUpIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M12 19V5M6 11l6-6 6 6" />
   </Icon>
 )
 
@@ -125,5 +152,81 @@ export const SearchIcon = (props: IconProps) => (
 export const DownloadIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />
+  </Icon>
+)
+
+export const HeartOffIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M12 20s-7.5-4.5-7.5-10A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.4c0 5.5-7.5 10-7.5 10Z" />
+    <path d="m4 4 16 16" />
+  </Icon>
+)
+
+export const SlidersIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1" />
+    <circle cx="15" cy="6" r="2" />
+    <circle cx="9" cy="12" r="2" />
+    <circle cx="17" cy="18" r="2" />
+  </Icon>
+)
+
+export const UsersIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="9" cy="8" r="3.5" />
+    <path d="M2.5 20a6.5 6.5 0 0 1 13 0" />
+    <path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 20a6.5 6.5 0 0 0-3-5.5" />
+  </Icon>
+)
+
+export const ActivityIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M3 12h4l3-8 4 16 3-8h4" />
+  </Icon>
+)
+
+export const RotateIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M4 12a8 8 0 1 0 2.3-5.6L4 8.7" />
+    <path d="M4 4v4.7h4.7" />
+  </Icon>
+)
+
+export const FileTextIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z" />
+    <path d="M14 3v5h5M9 13h6M9 17h6" />
+  </Icon>
+)
+
+export const KeyboardIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <rect x="2.5" y="6" width="19" height="12" rx="2" />
+    <path d="M6.5 10h.01M10 10h.01M13.5 10h.01M17 10h.01M7.5 14h9" />
+  </Icon>
+)
+
+export const PauseIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M9 5v14M15 5v14" />
+  </Icon>
+)
+
+export const PlayIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M7 4.5v15l12-7.5-12-7.5Z" />
+  </Icon>
+)
+
+export const GaugeIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M4.5 18a9 9 0 1 1 15 0" />
+    <path d="m12 14 4-5" />
+  </Icon>
+)
+
+export const CodeIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="m8 7-5 5 5 5M16 7l5 5-5 5" />
   </Icon>
 )

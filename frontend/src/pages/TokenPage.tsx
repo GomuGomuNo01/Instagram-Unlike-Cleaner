@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 
 import { saveToken } from '../api/token'
-import { Button, Card, Field, inputClass, PageHeader } from '../components/ui'
+import { Button, Card, Field, PageHeader } from '../components/ui'
 
 /** Écran de développement (`npm run dev`) : l'interface servie par `iuc serve` reçoit le
  * jeton automatiquement et n'affiche jamais cet écran. */
@@ -15,12 +15,13 @@ export function TokenPage() {
   }
 
   return (
-    <main className="mx-auto max-w-xl px-4 py-16 sm:px-6">
+    <main className="mx-auto w-full max-w-text px-4 py-16 sm:px-6">
       <PageHeader
+        eyebrow="Mode développement"
         title="Jeton de l’API"
-        description="Mode développement : colle le jeton affiché par `iuc serve` dans ton terminal."
+        description="Colle le jeton affiché par `iuc serve` dans ton terminal."
       />
-      <Card>
+      <Card padding="lg">
         <form onSubmit={submit} className="space-y-6">
           <Field id="jeton" label="Jeton">
             {(aria) => (
@@ -29,7 +30,7 @@ export function TokenPage() {
                 value={token}
                 onChange={(event) => setToken(event.target.value)}
                 autoComplete="off"
-                className={`${inputClass} font-mono`}
+                className="input font-mono"
               />
             )}
           </Field>

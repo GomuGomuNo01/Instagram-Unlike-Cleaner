@@ -1,54 +1,81 @@
-import { Link } from 'react-router'
-
 import { Logo } from './Header'
-import { navigation } from './navigation'
+import { ArrowUpIcon } from './icons'
+import { jobsLink, REPOSITORY, sections } from './navigation'
+import { AppLink } from './ui'
 
-const REPOSITORY = 'https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner'
+const linkClass =
+  'inline-flex min-h-11 items-center text-small text-fg-muted transition-colors hover:text-fg sm:min-h-0 sm:py-1'
 
 export function Footer() {
   return (
-    <footer className="border-t border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:px-6 md:grid-cols-4">
-        <div className="md:col-span-2">
+    <footer className="border-t border-border bg-canvas-subtle">
+      <div className="mx-auto grid w-full max-w-page gap-12 px-4 py-16 sm:px-6 md:grid-cols-12 lg:px-8">
+        <div className="md:col-span-5">
           <Logo />
-          <p className="text-small mt-4 max-w-sm">
+          <p className="mt-4 max-w-text text-small text-fg-muted">
             Nettoie ton historique de « J’aime » Instagram en gardant la main sur chaque étape. Tout
             reste sur ton ordinateur, aucun mot de passe n’est lu ni stocké.
           </p>
         </div>
-        <nav aria-label="Liens du pied de page">
-          <h2 className="text-sm font-semibold">Navigation</h2>
-          <ul className="mt-4 space-y-2">
-            {[{ to: '/', label: 'Accueil' }, ...navigation].map((item) => (
-              <li key={item.to}>
-                <Link to={item.to} className="text-small hover:text-zinc-900 dark:hover:text-white">
-                  {item.label}
-                </Link>
+        <nav aria-label="Pied de page" className="grid gap-8 sm:grid-cols-3 md:col-span-7">
+          <div>
+            <h2 className="text-small font-semibold text-fg">Découvrir</h2>
+            <ul className="mt-3">
+              {sections.map((section) => (
+                <li key={section.id}>
+                  <AppLink to={`/#${section.id}`} className={linkClass}>
+                    {section.label}
+                  </AppLink>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h2 className="text-small font-semibold text-fg">Application</h2>
+            <ul className="mt-3">
+              <li>
+                <AppLink to="/commencer" className={linkClass}>
+                  Commencer un nettoyage
+                </AppLink>
               </li>
-            ))}
-          </ul>
+              <li>
+                <AppLink to={jobsLink.to} className={linkClass}>
+                  {jobsLink.label}
+                </AppLink>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h2 className="text-small font-semibold text-fg">Contact et légal</h2>
+            <ul className="mt-3">
+              <li>
+                <a href={REPOSITORY} target="_blank" rel="noreferrer" className={linkClass}>
+                  Code source et contact (GitHub)
+                </a>
+              </li>
+              <li className="py-1 text-small text-fg-muted">Données 100 % locales</li>
+              <li className="py-1 text-small text-fg-muted">
+                Projet indépendant, sans lien avec Instagram ni Meta
+              </li>
+            </ul>
+          </div>
         </nav>
-        <div>
-          <h2 className="text-sm font-semibold">Informations</h2>
-          <ul className="text-small mt-4 space-y-2">
-            <li>Projet indépendant, sans lien avec Instagram ni Meta.</li>
-            <li>Données 100 % locales.</li>
-            <li>
-              <a
-                href={REPOSITORY}
-                target="_blank"
-                rel="noreferrer"
-                className="underline hover:text-zinc-900 dark:hover:text-white"
-              >
-                Code source et contact sur GitHub
-              </a>
-            </li>
-          </ul>
+      </div>
+      <div className="border-t border-border">
+        <div className="mx-auto flex w-full max-w-page flex-col-reverse items-center justify-between gap-4 px-4 py-6 sm:flex-row sm:px-6 lg:px-8">
+          <p className="text-caption text-fg-muted">
+            © 2026 IUC. Instagram est une marque de Meta Platforms, Inc.
+          </p>
+          <button
+            type="button"
+            onClick={() => window.scrollTo({ top: 0 })}
+            className="btn btn-ghost"
+          >
+            <ArrowUpIcon className="h-4 w-4" />
+            Haut de page
+          </button>
         </div>
       </div>
-      <p className="border-t border-zinc-200 px-4 py-6 text-center text-xs text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
-        © 2026 IUC. Instagram est une marque de Meta Platforms, Inc.
-      </p>
     </footer>
   )
 }

@@ -1,16 +1,19 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { createBrowserRouter, RouterProvider } from 'react-router'
+import { createBrowserRouter } from 'react-router'
+import { RouterProvider } from 'react-router/dom'
 
 // Police Inter servie avec l'application (aucune requête vers un service externe).
-import '@fontsource-variable/inter'
+import '@fontsource-variable/inter/wght.css'
 import './index.css'
 import { getToken } from './api/token'
+import { initMotion } from './lib/motion'
 import { applyTheme, storedTheme } from './lib/preferences'
 import { TokenPage } from './pages/TokenPage'
 import { routes } from './router'
 
 applyTheme(storedTheme())
+initMotion()
 
 const root = document.getElementById('root')
 if (!root) throw new Error('Élément #root introuvable dans index.html')

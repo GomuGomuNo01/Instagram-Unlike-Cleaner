@@ -1,0 +1,191 @@
+/* Tokens du système de design.
+ *
+ * Les échelles par défaut de Tailwind sont remplacées (`initial`) : seules les valeurs
+ * ci-dessous existent, et les composants n'utilisent que celles-ci. Le test
+ * `src/test/design-system.test.ts` vérifie que le code ne contourne pas ces tokens.
+ *
+ * Espacements : échelle 4 / 8 / 12 / 16 / 24 / 32 / 48 / 64 / 96 / 128 px, soit les classes
+ * 1, 2, 3, 4, 6, 8, 12, 16, 24 et 32 (une unité Tailwind vaut 4 px).
+ * Couleurs : une couleur principale (indigo), des neutres (zinc) et quatre couleurs d'état.
+ * Tous les noms sont sémantiques : le thème sombre redéfinit les valeurs, pas les classes. */
+
+@theme {
+  --text-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --ease-*: initial;
+  --animate-*: initial;
+  --container-*: initial;
+
+  /* --- Typographie : Inter, servie localement ------------------------------------------ */
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace;
+
+  /* Tailles fluides (clamp) : le texte suit la largeur de l'écran sans palier brutal. */
+  --text-display: clamp(2.5rem, 1.5rem + 3.4vw, 4rem);
+  --text-display--line-height: 1.04;
+  --text-display--letter-spacing: -0.04em;
+  --text-display--font-weight: 650;
+  --text-h1: clamp(2rem, 1.6rem + 1.8vw, 3rem);
+  --text-h1--line-height: 1.1;
+  --text-h1--letter-spacing: -0.03em;
+  --text-h1--font-weight: 650;
+  --text-h2: clamp(1.75rem, 1.4rem + 1.5vw, 2.625rem);
+  --text-h2--line-height: 1.12;
+  --text-h2--letter-spacing: -0.03em;
+  --text-h2--font-weight: 650;
+  --text-h3: 1.125rem;
+  --text-h3--line-height: 1.4;
+  --text-h3--letter-spacing: -0.01em;
+  --text-h3--font-weight: 600;
+  --text-lead: clamp(1.0625rem, 1rem + 0.35vw, 1.25rem);
+  --text-lead--line-height: 1.6;
+  --text-body: 1rem;
+  --text-body--line-height: 1.65;
+  --text-small: 0.875rem;
+  --text-small--line-height: 1.55;
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1.5;
+
+  /* --- Couleurs (thème clair ; le thème sombre est dans base.css) ---------------------- */
+  --color-canvas: var(--color-white);
+  --color-canvas-subtle: var(--color-zinc-50);
+  --color-surface: var(--color-white);
+  --color-surface-muted: var(--color-zinc-50);
+  --color-surface-sunken: var(--color-zinc-100);
+  --color-border: var(--color-zinc-200);
+  --color-border-strong: var(--color-zinc-300);
+  --color-fg: var(--color-zinc-900);
+  --color-fg-muted: var(--color-zinc-600);
+  --color-fg-subtle: var(--color-zinc-500);
+
+  --color-primary: var(--color-indigo-600);
+  --color-primary-hover: var(--color-indigo-700);
+  --color-primary-active: var(--color-indigo-800);
+  --color-on-primary: var(--color-white);
+  --color-primary-soft: var(--color-indigo-50);
+  --color-primary-soft-hover: var(--color-indigo-100);
+  --color-primary-strong: var(--color-indigo-700);
+  --color-ring: var(--color-indigo-500);
+  --color-glow: var(--color-indigo-500);
+  --color-glow-alt: var(--color-violet-500);
+  --color-fill: color-mix(in oklab, var(--color-fg) 6%, transparent); /* survol discret */
+  --color-fill-strong: color-mix(in oklab, var(--color-fg) 10%, transparent);
+
+  --color-success: var(--color-emerald-700);
+  --color-success-strong: var(--color-emerald-700);
+  --color-success-soft: var(--color-emerald-50);
+  --color-success-fg: var(--color-emerald-950);
+  --color-success-border: var(--color-emerald-200);
+  --color-warning-strong: var(--color-amber-700);
+  --color-warning-soft: var(--color-amber-50);
+  --color-warning-fg: var(--color-amber-950);
+  --color-warning-border: var(--color-amber-200);
+  --color-danger: var(--color-red-600);
+  --color-danger-hover: var(--color-red-700);
+  --color-danger-strong: var(--color-red-700);
+  --color-danger-soft: var(--color-red-50);
+  --color-danger-fg: var(--color-red-950);
+  --color-danger-border: var(--color-red-200);
+  --color-info-strong: var(--color-sky-700);
+  --color-info-soft: var(--color-sky-50);
+  --color-info-fg: var(--color-sky-950);
+  --color-info-border: var(--color-sky-200);
+
+  /* --- Formes ------------------------------------------------------------------------- */
+  --radius-xs: 0.375rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-2xl: 2rem;
+
+  /* --- Largeurs de contenu ------------------------------------------------------------ */
+  --container-dialog: 28rem;
+  --container-text: 36rem;
+  --container-prose: 44rem;
+  --container-app: 64rem;
+  --container-page: 76rem;
+
+  /* --- Points de rupture (mobile d'abord) --------------------------------------------- */
+  --breakpoint-sm: 40rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 80rem;
+  --breakpoint-2xl: 96rem;
+
+  /* --- Motion : durées et courbes partagées par toutes les animations ----------------- */
+  --transition-duration-micro: 140ms; /* micro-interaction : appui, case, interrupteur */
+  --transition-duration-hover: 180ms; /* survol */
+  --transition-duration-component: 260ms; /* apparition d'un composant : liste, bulle, toast */
+  --transition-duration-page: 380ms; /* transition d'écran, fenêtre modale */
+  --transition-duration-complex: 640ms; /* apparition au défilement, scène d'accueil */
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1); /* entrées : rapide puis amorti */
+  --ease-in: cubic-bezier(0.55, 0, 1, 0.45); /* sorties : discrètes */
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1); /* passage d'un état à un autre */
+  --ease-emphasized: cubic-bezier(0.34, 1.32, 0.64, 1); /* léger dépassement, jamais un rebond */
+
+  --default-transition-duration: var(--transition-duration-hover);
+  --default-transition-timing-function: var(--ease-out);
+
+  --animate-spin: spin 800ms linear infinite;
+  --animate-fade-in: fade-in var(--transition-duration-component) var(--ease-out) both;
+  --animate-fade-up: fade-up var(--transition-duration-component) var(--ease-out) both;
+  --animate-pop: pop var(--transition-duration-micro) var(--ease-emphasized) both;
+  --animate-value: value-in var(--transition-duration-component) var(--ease-out) both;
+
+  @keyframes spin {
+    to {
+      rotate: 360deg;
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      translate: 0 var(--motion-distance-md);
+    }
+  }
+
+  @keyframes pop {
+    from {
+      opacity: 0;
+      scale: var(--motion-scale-pop);
+    }
+  }
+
+  @keyframes value-in {
+    from {
+      opacity: 0;
+      translate: 0 calc(var(--motion-distance-sm) * 2);
+    }
+  }
+}
+
+/* Tokens sans utilitaire Tailwind : élévations et amplitudes de mouvement. */
+:root {
+  --elevation-xs: 0 1px 2px 0 oklch(0% 0 0 / 0.05);
+  --elevation-sm: 0 1px 2px oklch(0% 0 0 / 0.04), 0 4px 12px -4px oklch(0% 0 0 / 0.08);
+  --elevation-md: 0 2px 4px -1px oklch(0% 0 0 / 0.06), 0 12px 28px -8px oklch(0% 0 0 / 0.14);
+  --elevation-lg: 0 4px 8px -2px oklch(0% 0 0 / 0.06), 0 24px 48px -12px oklch(0% 0 0 / 0.2);
+  --elevation-glow: 0 8px 28px -8px color-mix(in oklab, var(--color-primary) 60%, transparent);
+  --highlight-inset: inset 0 1px 0 oklch(100% 0 0 / 0.14);
+
+  /* Amplitudes : le mouvement reste de quelques pixels, jamais spectaculaire. */
+  --motion-distance-sm: 2px; /* survol */
+  --motion-distance-md: 8px; /* apparition d'un composant ou d'un écran */
+  --motion-distance-lg: 20px; /* apparition au défilement */
+  --motion-scale-from: 0.97;
+  --motion-scale-pop: 0.85;
+  --motion-scale-press: 0.97; /* retour visuel à l'appui */
+  --stagger: 80ms; /* décalage entre éléments d'une même séquence */
+  --stagger-tight: 40ms; /* décalage dans un menu ou une courte liste */
+  --magnet-max: 4px; /* attraction maximale d'un bouton vers le curseur */
+}

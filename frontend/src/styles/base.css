@@ -1,0 +1,119 @@
+@layer base {
+  /* color-scheme aligne aussi les contrôles natifs (dates, listes) sur le thème choisi. */
+  html {
+    color-scheme: light;
+    background-color: var(--color-canvas);
+    color: var(--color-fg);
+    font-size: 100%;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    scroll-padding-top: 6rem; /* les ancres ne passent pas sous l'en-tête fixe */
+    scrollbar-gutter: stable; /* pas de saut de mise en page quand le défilement est bloqué */
+    interpolate-size: allow-keywords; /* permet d'animer une hauteur « auto » (accordéons) */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Thème sombre : mêmes noms, autres valeurs. */
+  html.dark {
+    color-scheme: dark;
+    --color-canvas: var(--color-zinc-950);
+    --color-canvas-subtle: color-mix(in oklab, var(--color-zinc-900) 55%, var(--color-zinc-950));
+    --color-surface: var(--color-zinc-900);
+    --color-surface-muted: color-mix(in oklab, var(--color-zinc-800) 45%, var(--color-zinc-900));
+    --color-surface-sunken: var(--color-zinc-950);
+    --color-border: var(--color-zinc-800);
+    --color-border-strong: var(--color-zinc-700);
+    --color-fg: var(--color-zinc-50);
+    --color-fg-muted: var(--color-zinc-400);
+    --color-fg-subtle: var(--color-zinc-500);
+
+    --color-primary-hover: color-mix(in oklab, var(--color-indigo-600), var(--color-white) 10%);
+    --color-primary-active: var(--color-indigo-700);
+    --color-primary-soft: color-mix(in oklab, var(--color-indigo-500) 16%, transparent);
+    --color-primary-soft-hover: color-mix(in oklab, var(--color-indigo-500) 26%, transparent);
+    --color-primary-strong: var(--color-indigo-300);
+    --color-ring: var(--color-indigo-400);
+
+    --color-success-strong: var(--color-emerald-400);
+    --color-success-soft: color-mix(in oklab, var(--color-emerald-500) 12%, transparent);
+    --color-success-fg: var(--color-emerald-100);
+    --color-success-border: color-mix(in oklab, var(--color-emerald-500) 30%, transparent);
+    --color-warning-strong: var(--color-amber-300);
+    --color-warning-soft: color-mix(in oklab, var(--color-amber-500) 12%, transparent);
+    --color-warning-fg: var(--color-amber-100);
+    --color-warning-border: color-mix(in oklab, var(--color-amber-500) 30%, transparent);
+    --color-danger-strong: var(--color-red-400);
+    --color-danger-soft: color-mix(in oklab, var(--color-red-500) 12%, transparent);
+    --color-danger-fg: var(--color-red-100);
+    --color-danger-border: color-mix(in oklab, var(--color-red-500) 32%, transparent);
+    --color-info-strong: var(--color-sky-300);
+    --color-info-soft: color-mix(in oklab, var(--color-sky-500) 12%, transparent);
+    --color-info-fg: var(--color-sky-100);
+    --color-info-border: color-mix(in oklab, var(--color-sky-500) 30%, transparent);
+
+    --elevation-xs: 0 1px 2px 0 oklch(0% 0 0 / 0.4);
+    --elevation-sm: 0 1px 2px oklch(0% 0 0 / 0.4), 0 4px 12px -4px oklch(0% 0 0 / 0.5);
+    --elevation-md: 0 2px 4px -1px oklch(0% 0 0 / 0.4), 0 12px 28px -8px oklch(0% 0 0 / 0.6);
+    --elevation-lg: 0 4px 8px -2px oklch(0% 0 0 / 0.4), 0 24px 48px -12px oklch(0% 0 0 / 0.7);
+    --highlight-inset: inset 0 1px 0 oklch(100% 0 0 / 0.06);
+  }
+
+  body {
+    min-height: 100dvh;
+    overflow-x: clip; /* filet de sécurité : jamais de défilement horizontal */
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    font-feature-settings: 'cv11'; /* « a » à un seul étage d'Inter, plus lisible à l'écran */
+  }
+
+  /* Un élément de grille peut rétrécir sous la largeur de son contenu : un texte tronqué ou
+   * un tableau ne fait jamais déborder la colonne de l'écran (mobile d'abord). */
+  :where(.grid) > * {
+    min-width: 0;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p,
+  li,
+  dd {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background-color: var(--color-primary-soft-hover);
+  }
+
+  /* Contour visible pour la navigation au clavier, sur tous les éléments interactifs. */
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
+  /* Mouvement réduit : plus aucun déplacement ni agrandissement, seuls les fondus et les
+   * indicateurs de chargement restent (ils portent une information). */
+  @media (prefers-reduced-motion: reduce) {
+    :root {
+      --motion-distance-sm: 0px;
+      --motion-distance-md: 0px;
+      --motion-distance-lg: 0px;
+      --motion-scale-from: 1;
+      --motion-scale-pop: 1;
+      --motion-scale-press: 1;
+      --magnet-max: 0px;
+      --stagger: 0ms;
+      --stagger-tight: 0ms;
+    }
+  }
+}

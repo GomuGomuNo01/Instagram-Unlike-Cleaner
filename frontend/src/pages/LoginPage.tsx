@@ -1,19 +1,31 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { api, errorMessage, unwrap } from '../api/client'
 import type { SessionStatus } from '../api/types'
 import { FlowSteps } from '../components/FlowSteps'
 import { AppPage } from '../components/Layout'
-import { ArrowRightIcon } from '../components/icons'
-import { Alert, Button, ButtonLink, Card, PageHeader, Spinner } from '../components/ui'
+import { ArrowRightIcon, LockIcon } from '../components/icons'
+import {
+  Alert,
+  Button,
+  ButtonLink,
+  Card,
+  LiveDot,
+  PageHeader,
+  Skeleton,
+  SkeletonBlock,
+  useToast,
+} from '../components/ui'
 
 const POLL_MS = 2000
 
 /** Connexion : ouvre le navigateur piloté et suit la connexion faite par l'utilisateur. */
 export function LoginPage() {
+  const toast = useToast()
   const [status, setStatus] = useState<SessionStatus | null>(null)
   const [opening, setOpening] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const wasLoggedIn = useRef<boolean | null>(null)
 
   useEffect(() => {
     let active = true
@@ -21,6 +33,11 @@ export function LoginPage() {
       unwrap(api.GET('/api/session/status')).then(
         (loaded) => {
           if (!active) return
+          // Connexion détectée pendant que l'écran était ouvert : on le signale.
+          if (wasLoggedIn.current === false && loaded.logged_in) {
+            toast({ title: 'Connexion détectée', description: 'Tu peux choisir tes critères.' })
+          }
+          wasLoggedIn.current = loaded.logged_in
           setStatus(loaded)
           setError(null)
         },
@@ -34,7 +51,7 @@ export function LoginPage() {
       active = false
       window.clearInterval(timer)
     }
-  }, [])
+  }, [toast])
 
   const open = async () => {
     setOpening(true)
@@ -49,9 +66,8 @@ export function LoginPage() {
   }
 
   const action = status?.logged_in ? (
-    <ButtonLink to="/filtres" size="lg">
+    <ButtonLink to="/filtres" size="lg" trailingIcon={<ArrowRightIcon />}>
       Choisir les critères
-      <ArrowRightIcon />
     </ButtonLink>
   ) : !status?.browser_open ? (
     <Button size="lg" onClick={() => void open()} loading={opening} disabled={!status}>
@@ -67,18 +83,30 @@ export function LoginPage() {
         description="IUC ouvre une fenêtre Chromium dédiée. Tu t’y connectes toi-même : aucun champ du formulaire n’est lu."
         actions={action}
       />
-      <Card>
+      <Card padding="lg">
         <div aria-live="polite" className="space-y-4">
           <SessionMessage status={status} />
           {error && <Alert tone="danger">{error}</Alert>}
         </div>
+        <p className="mt-6 flex items-center gap-3 border-t border-border pt-6 text-small text-fg-muted">
+          <LockIcon className="h-5 w-5 text-primary-strong" />
+          Ton mot de passe ne passe jamais par IUC. La session reste dans le dossier d’IUC, sur ton
+          ordinateur.
+        </p>
       </Card>
     </AppPage>
   )
 }
 
 function SessionMessage({ status }: { status: SessionStatus | null }) {
-  if (!status) return <Spinner label="Vérification de la session…" />
+  if (!status) {
+    return (
+      <SkeletonBlock label="Vérification de la session…">
+        <Skeleton className="h-4 w-48" />
+        <Skeleton className="mt-3 h-12 w-full" />
+      </SkeletonBlock>
+    )
+  }
   if (!status.browser_open) {
     return (
       <Alert title="La fenêtre Instagram n’est pas ouverte">
@@ -113,7 +141,10 @@ function SessionMessage({ status }: { status: SessionStatus | null }) {
   }
   return (
     <div className="space-y-4">
-      <Spinner label="En attente de ta connexion…" />
+      <p className="flex items-center gap-3 text-small font-medium text-fg">
+        <LiveDot tone="primary" />
+        En attente de ta connexion…
+      </p>
       <Alert title="Connecte-toi dans la fenêtre Chromium">
         Saisis tes identifiants directement sur la page d’Instagram, double authentification
         comprise. Cette page se met à jour toute seule.

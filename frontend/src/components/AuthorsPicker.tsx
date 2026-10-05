@@ -3,8 +3,8 @@ import { useId, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import type { Author } from '../api/types'
 import { normalizeAuthor } from '../lib/filters'
 import { plural } from '../lib/format'
-import { CheckIcon, ChevronDownIcon, CloseIcon, SearchIcon } from './icons'
-import { inputClass } from './ui'
+import { ChevronDownIcon, CloseIcon, SearchIcon } from './icons'
+import { FieldMessage, Spinner } from './ui'
 
 const MAX_SHOWN = 50
 
@@ -24,6 +24,7 @@ export function AuthorsPicker({
   value,
   onChange,
   suggestions,
+  loading = false,
   unavailable,
   unavailableLabel,
 }: {
@@ -33,6 +34,8 @@ export function AuthorsPicker({
   value: string[]
   onChange: (authors: string[]) => void
   suggestions: Author[]
+  /** La liste des comptes est en cours de chargement. */
+  loading?: boolean
   unavailable: string[]
   unavailableLabel: string
 }) {
@@ -44,8 +47,8 @@ export function AuthorsPicker({
   const [active, setActive] = useState(0)
   const [typingError, setTypingError] = useState<string | null>(null)
 
+  const search = query.trim().replace(/^@/, '').toLowerCase()
   const options = useMemo<Option[]>(() => {
-    const search = query.trim().replace(/^@/, '').toLowerCase()
     const matches = suggestions
       .filter((suggestion) => suggestion.author.includes(search))
       .sort((a, b) => Number(b.author.startsWith(search)) - Number(a.author.startsWith(search)))
@@ -60,11 +63,9 @@ export function AuthorsPicker({
       matches.unshift({ author: typed, likes: null })
     }
     return matches
-  }, [query, suggestions, unavailable, unavailableLabel])
+  }, [query, search, suggestions, unavailable, unavailableLabel])
 
-  const total = suggestions.filter((suggestion) =>
-    suggestion.author.includes(query.trim().replace(/^@/, '').toLowerCase()),
-  ).length
+  const total = suggestions.filter((suggestion) => suggestion.author.includes(search)).length
 
   const toggle = (option: Option) => {
     if (option.blockedBy) return
@@ -97,16 +98,15 @@ export function AuthorsPicker({
     }
   }
 
-  const describedBy = [`${id}-aide`, (error || typingError) && `${id}-erreur`]
-    .filter(Boolean)
-    .join(' ')
+  const message = typingError ?? error
+  const describedBy = [`${id}-aide`, message && `${id}-erreur`].filter(Boolean).join(' ')
   const activeOption = open ? options[active] : undefined
   return (
     <div>
-      <label htmlFor={id} className="block text-sm font-medium">
+      <label htmlFor={id} className="block text-small font-medium text-fg">
         {label}
       </label>
-      <p id={`${id}-aide`} className="text-small mt-1">
+      <p id={`${id}-aide`} className="mt-1 text-small text-fg-muted">
         {help}
       </p>
 
@@ -115,14 +115,14 @@ export function AuthorsPicker({
           {value.map((author) => (
             <li
               key={author}
-              className="inline-flex min-h-9 items-center gap-1 rounded-full bg-indigo-50 py-1 pr-1 pl-3 text-sm font-medium text-indigo-900 dark:bg-indigo-950 dark:text-indigo-100"
+              className="inline-flex min-h-8 animate-pop items-center gap-1 rounded-full bg-primary-soft py-1 pr-1 pl-3 text-small font-medium text-primary-strong"
             >
               @{author}
               <button
                 type="button"
                 onClick={() => onChange(value.filter((item) => item !== author))}
                 aria-label={`Retirer @${author}`}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-full hover:bg-indigo-200 dark:hover:bg-indigo-800"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-primary-soft-hover"
               >
                 <CloseIcon className="h-4 w-4" />
               </button>
@@ -137,7 +137,7 @@ export function AuthorsPicker({
           if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false)
         }}
       >
-        <SearchIcon className="pointer-events-none absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 text-zinc-500" />
+        <SearchIcon className="pointer-events-none absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 text-fg-subtle" />
         <input
           ref={inputRef}
           id={id}
@@ -147,7 +147,7 @@ export function AuthorsPicker({
           aria-autocomplete="list"
           aria-activedescendant={activeOption ? `${id}-${activeOption.author}` : undefined}
           aria-describedby={describedBy}
-          aria-invalid={error || typingError ? true : undefined}
+          aria-invalid={message ? true : undefined}
           value={query}
           onChange={(event) => {
             setQuery(event.target.value)
@@ -159,7 +159,7 @@ export function AuthorsPicker({
           onKeyDown={onKeyDown}
           placeholder={suggestions.length ? 'Rechercher un compte' : '@compte'}
           autoComplete="off"
-          className={`${inputClass} pr-12 pl-10`}
+          className="input pr-12 pl-12"
         />
         <button
           type="button"
@@ -169,18 +169,28 @@ export function AuthorsPicker({
             inputRef.current?.focus()
           }}
           aria-label={open ? 'Masquer la liste des comptes' : 'Afficher la liste des comptes'}
-          className="absolute top-0 right-0 flex h-11 w-11 items-center justify-center text-zinc-600 dark:text-zinc-400"
+          className="absolute top-0 right-0 flex h-11 w-11 items-center justify-center text-fg-muted"
         >
-          <ChevronDownIcon className={`h-5 w-5 transition-transform ${open ? 'rotate-180' : ''}`} />
+          <ChevronDownIcon
+            className={`h-5 w-5 transition-transform duration-component ${open ? 'rotate-180' : ''}`}
+          />
         </button>
 
         {open && (
-          <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
-            <p className="border-b border-zinc-200 px-4 py-2 text-xs text-zinc-600 dark:border-zinc-700 dark:text-zinc-400">
-              {suggestions.length
-                ? `${plural(total, 'compte trouvé', 'comptes trouvés')} dans tes likes`
-                : 'La liste de tes comptes apparaîtra après un premier aperçu. Tu peux déjà saisir un nom.'}
-              {total > MAX_SHOWN && `, affine ta recherche pour voir les autres`}
+          <div className="popover absolute z-30 mt-2 w-full overflow-hidden">
+            <p className="flex items-center gap-2 border-b border-border px-4 py-2 text-caption text-fg-muted">
+              {loading ? (
+                <>
+                  <Spinner className="h-3 w-3" />
+                  Chargement de tes comptes…
+                </>
+              ) : suggestions.length ? (
+                `${plural(total, 'compte trouvé', 'comptes trouvés')} dans tes likes${
+                  total > MAX_SHOWN ? ', affine ta recherche pour voir les autres' : ''
+                }`
+              ) : (
+                'La liste de tes comptes apparaîtra après un premier aperçu. Tu peux déjà saisir un nom.'
+              )}
             </p>
             <ul
               id={listId}
@@ -201,42 +211,31 @@ export function AuthorsPicker({
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={() => toggle(option)}
                     onMouseEnter={() => setActive(index)}
-                    className={`flex min-h-11 cursor-pointer items-center gap-3 px-4 text-sm ${
-                      index === active ? 'bg-zinc-100 dark:bg-zinc-800' : ''
-                    } ${option.blockedBy ? 'cursor-not-allowed opacity-60' : ''}`}
+                    className={`flex min-h-11 cursor-pointer items-center gap-3 px-4 text-small transition-colors ${
+                      index === active ? 'bg-fill' : ''
+                    } ${option.blockedBy ? 'cursor-not-allowed opacity-50' : ''}`}
                   >
-                    <span
-                      aria-hidden="true"
-                      className={`flex h-5 w-5 items-center justify-center rounded border ${
-                        selected
-                          ? 'border-indigo-600 bg-indigo-600 text-white'
-                          : 'border-zinc-400 dark:border-zinc-600'
-                      }`}
-                    >
-                      {selected && <CheckIcon className="h-4 w-4" />}
-                    </span>
+                    <span aria-hidden="true" className="checkbox" data-checked={selected} />
                     <span className="flex-1 truncate font-medium">
                       {option.likes === null ? `Ajouter @${option.author}` : `@${option.author}`}
                     </span>
-                    <span className="text-xs text-zinc-600 dark:text-zinc-400">
+                    <span className="text-caption text-fg-muted tabular-nums">
                       {option.blockedBy ?? (option.likes !== null && plural(option.likes, 'like'))}
                     </span>
                   </li>
                 )
               })}
               {options.length === 0 && (
-                <li className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
-                  Aucun compte ne correspond.
-                </li>
+                <li className="px-4 py-3 text-small text-fg-muted">Aucun compte ne correspond.</li>
               )}
             </ul>
           </div>
         )}
       </div>
-      {(error || typingError) && (
-        <p id={`${id}-erreur`} className="mt-2 text-sm font-medium text-red-700 dark:text-red-400">
-          {typingError ?? error}
-        </p>
+      {message && (
+        <FieldMessage id={`${id}-erreur`} tone="error">
+          {message}
+        </FieldMessage>
       )}
     </div>
   )
