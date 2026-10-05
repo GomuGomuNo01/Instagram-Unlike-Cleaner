@@ -1,7 +1,11 @@
 import asyncio
+import json
 import signal
+import tempfile
+import webbrowser
 from collections.abc import Awaitable, Callable
 from datetime import datetime
+from pathlib import Path
 from types import FrameType
 from typing import Annotated
 
@@ -81,21 +85,52 @@ def serve(
         int | None,
         typer.Option(min=1024, max=65535, help="Port de l'API (par défaut : API_PORT, 8765)."),
     ] = None,
+    open_ui: Annotated[
+        bool, typer.Option("--open/--no-open", help="Ouvre l'interface dans le navigateur.")
+    ] = True,
 ) -> None:
-    """Lance l'API locale, sur 127.0.0.1 uniquement (documentation sur /docs)."""
+    """Lance l'API locale et l'interface, sur 127.0.0.1 uniquement (API documentée sur /docs)."""
     settings = get_settings()
     settings.ensure_dirs()
     setup_logging(settings)
     port = port or settings.api_port
     token = new_token()
     api = create_app(settings, token=token)
-    typer.echo(f"API locale : http://127.0.0.1:{port}  (documentation : /docs)")
-    typer.echo(f"Jeton à envoyer dans l'en-tête {TOKEN_HEADER} : {token}")
+    url = f"http://127.0.0.1:{port}"
+    typer.echo(f"Interface : {url}  (API documentée sur {url}/docs)")
+    typer.echo(f"Jeton de l'API (en-tête {TOKEN_HEADER}) : {token}")
     typer.echo("Ctrl+C pour arrêter le serveur : un nettoyage en cours passe en pause.")
     # Journal d'accès désactivé : il afficherait le jeton passé dans l'URL du flux SSE.
     config = uvicorn.Config(api, host="127.0.0.1", port=port, access_log=False, log_level="warning")
+    server = uvicorn.Server(config)
+
+    async def run_server() -> None:
+        async def open_when_ready() -> None:
+            while not server.started:
+                await asyncio.sleep(0.1)
+            webbrowser.open(url)
+
+        opener = asyncio.create_task(open_when_ready()) if open_ui else None
+        await server.serve()
+        if opener is not None:
+            opener.cancel()
+
     # asyncio.run utilise sous Windows la boucle Proactor, nécessaire à Playwright.
-    asyncio.run(uvicorn.Server(config).serve())
+    asyncio.run(run_server())
+
+
+@app.command()
+def openapi(
+    output: Annotated[Path, typer.Argument(help="Fichier JSON à écrire.")],
+) -> None:
+    """Exporte le schéma OpenAPI de l'API (sert à générer les types du frontend)."""
+    with tempfile.TemporaryDirectory() as data_dir:
+        api = create_app(Settings(_env_file=None, data_dir=Path(data_dir)), token="export")
+        schema = api.openapi()
+        api.state.iuc.engine.dispose()
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(schema, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    typer.echo(f"Schéma OpenAPI écrit : {output}")
 
 
 @app.command()
@@ -504,6 +539,11 @@ def purge(
         typer.echo("Aucune donnée locale à supprimer.")
     for path in deleted:
         typer.echo(f"Supprimé : {path}")
+    if deleted:
+        # Trace dans le nouveau journal : l'ancien vient d'être supprimé avec le reste.
+        setup_logging(settings).warning(
+            "Données locales supprimées avec `iuc purge` (%d éléments)", len(deleted)
+        )
 
 
 def _open_database() -> Engine:

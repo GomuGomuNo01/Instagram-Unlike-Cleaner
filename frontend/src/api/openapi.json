@@ -1,0 +1,1386 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "IUC – API locale",
+    "description": "API locale d'Instagram Unlike Cleaner. Toutes les routes /api exigent le jeton affiché par `iuc serve`, dans l'en-tête X-IUC-Token.",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/session/start": {
+      "post": {
+        "tags": [
+          "session"
+        ],
+        "summary": "Start Session",
+        "description": "Ouvre le navigateur visible sur instagram.com : l'utilisateur s'y connecte lui-même.",
+        "operationId": "start_session_api_session_start_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionStatusOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/api/session/status": {
+      "get": {
+        "tags": [
+          "session"
+        ],
+        "summary": "Session Status",
+        "description": "Indique si le navigateur est ouvert et si l'utilisateur est connecté (à interroger\nrégulièrement pendant la connexion manuelle).",
+        "operationId": "session_status_api_session_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionStatusOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/api/session": {
+      "delete": {
+        "tags": [
+          "session"
+        ],
+        "summary": "Delete Session",
+        "description": "Ferme le navigateur et supprime son profil local, donc la session Instagram.",
+        "operationId": "delete_session_api_session_delete",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletedOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/api/data": {
+      "delete": {
+        "tags": [
+          "session"
+        ],
+        "summary": "Delete Data",
+        "description": "Supprime toutes les données locales d'IUC (profil, base, rapports, diagnostics,\njournaux), puis repart d'une base vide.",
+        "operationId": "delete_data_api_data_delete",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletedOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/api/jobs": {
+      "get": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Get Jobs",
+        "operationId": "get_jobs_api_jobs_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/JobOut"
+                  },
+                  "type": "array",
+                  "title": "Response Get Jobs Api Jobs Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Create Cleanup",
+        "description": "Crée un nettoyage et lance en arrière-plan la collecte de son aperçu (rien n'est\nretiré). Suivre l'avancement avec GET /api/jobs/{id}/events.",
+        "operationId": "create_cleanup_api_jobs_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/api/jobs/{job_id}": {
+      "get": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Get Job",
+        "operationId": "get_job_api_jobs__job_id__get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jobs/{job_id}/items": {
+      "get": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Get Items",
+        "description": "Likes ciblés, dans l'ordre de la grille, page par page.",
+        "operationId": "get_items_api_jobs__job_id__items_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ItemStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemsPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Patch Items",
+        "description": "Décoche (exclut) ou recoche des likes de l'aperçu.",
+        "operationId": "patch_items_api_jobs__job_id__items_patch",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemsPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemsPatchOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jobs/{job_id}/start": {
+      "post": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Start Cleanup",
+        "description": "Lance les unlikes. Le premier lancement valide l'aperçu.",
+        "operationId": "start_cleanup_api_jobs__job_id__start_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/StartRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jobs/{job_id}/resume": {
+      "post": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Resume Cleanup",
+        "description": "Reprend un nettoyage en pause, là où il s'était arrêté.",
+        "operationId": "resume_cleanup_api_jobs__job_id__resume_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/StartRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jobs/{job_id}/pause": {
+      "post": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Pause Cleanup",
+        "description": "Demande une pause : le lot en cours se termine, est contrôlé, puis tout s'arrête.",
+        "operationId": "pause_cleanup_api_jobs__job_id__pause_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jobs/{job_id}/stop": {
+      "post": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Stop Cleanup",
+        "description": "Arrête définitivement un nettoyage : les likes non traités ne seront pas retirés.\nEn cours d'exécution, l'arrêt a lieu après le lot en cours ; une collecte d'aperçu en\ncours est interrompue.",
+        "operationId": "stop_cleanup_api_jobs__job_id__stop_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jobs/{job_id}/events": {
+      "get": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Job Events",
+        "description": "Progression en direct (Server-Sent Events) : « snapshot », puis « status »,\n« progress », « batch » et enfin « end ». Le jeton peut être passé en paramètre\n`token`, car EventSource ne sait pas envoyer d'en-tête.",
+        "operationId": "job_events_api_jobs__job_id__events_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jobs/{job_id}/report": {
+      "get": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Job Report",
+        "description": "Rapport du nettoyage, en JSON ou en CSV ; les fichiers sont aussi écrits dans\nDATA_DIR/reports.",
+        "operationId": "job_report_api_jobs__job_id__report_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "json",
+                "csv"
+              ],
+              "type": "string",
+              "default": "json",
+              "title": "Format"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/authors": {
+      "get": {
+        "tags": [
+          "authors"
+        ],
+        "summary": "Get Authors",
+        "description": "Comptes dont tu as aimé des publications, d'après tes aperçus déjà collectés (ceux du\ncompte connecté s'il est connu), du plus fréquent au moins fréquent. Liste vide avant le\npremier aperçu.",
+        "operationId": "get_authors_api_authors_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AuthorOut"
+                  },
+                  "type": "array",
+                  "title": "Response Get Authors Api Authors Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AuthorOut": {
+        "properties": {
+          "author": {
+            "type": "string",
+            "title": "Author"
+          },
+          "likes": {
+            "type": "integer",
+            "title": "Likes",
+            "description": "Likes encore en place, d'après les aperçus collectés."
+          }
+        },
+        "type": "object",
+        "required": [
+          "author",
+          "likes"
+        ],
+        "title": "AuthorOut"
+      },
+      "CleanupFilters": {
+        "properties": {
+          "sort": {
+            "$ref": "#/components/schemas/SortOrder",
+            "default": "newest_first"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "content": {
+            "$ref": "#/components/schemas/ContentFilter",
+            "default": "all"
+          },
+          "include_authors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Include Authors",
+            "default": []
+          },
+          "exclude_authors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Exclude Authors",
+            "default": []
+          }
+        },
+        "type": "object",
+        "title": "CleanupFilters",
+        "description": "Critères d'un nettoyage.\n\nLe tri et les dates sont appliqués par Instagram, avec le filtre de la page des likes.\nLe type et les auteurs sont appliqués par IUC sur les vignettes collectées, car la\nversion web d'Instagram ne propose pas ces filtres. Quand un critère ne peut pas être\nvérifié pour un like (auteur ou type illisible), le like est gardé."
+      },
+      "ContentFilter": {
+        "type": "string",
+        "enum": [
+          "all",
+          "posts",
+          "reels"
+        ],
+        "title": "ContentFilter"
+      },
+      "DeletedOut": {
+        "properties": {
+          "deleted": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Deleted"
+          }
+        },
+        "type": "object",
+        "required": [
+          "deleted"
+        ],
+        "title": "DeletedOut"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ItemOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "rank": {
+            "type": "integer",
+            "title": "Rank",
+            "description": "Rang dans l'aperçu, à partir de 1."
+          },
+          "media_key": {
+            "type": "string",
+            "title": "Media Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "author": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Author"
+          },
+          "media_kind": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaKind"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "shared_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shared On",
+            "description": "Date « partagée le » affichée par Instagram."
+          },
+          "status": {
+            "$ref": "#/components/schemas/ItemStatus"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "processed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Processed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "rank",
+          "media_key",
+          "label",
+          "author",
+          "media_kind",
+          "shared_on",
+          "status",
+          "error",
+          "processed_at"
+        ],
+        "title": "ItemOut"
+      },
+      "ItemStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "selected",
+          "excluded",
+          "done",
+          "failed",
+          "skipped"
+        ],
+        "title": "ItemStatus"
+      },
+      "ItemsPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ItemOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "offset",
+          "limit"
+        ],
+        "title": "ItemsPage"
+      },
+      "ItemsPatch": {
+        "properties": {
+          "item_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Item Ids"
+          },
+          "excluded": {
+            "type": "boolean",
+            "title": "Excluded",
+            "description": "true : décocher (exclure) ; false : recocher."
+          }
+        },
+        "type": "object",
+        "required": [
+          "item_ids",
+          "excluded"
+        ],
+        "title": "ItemsPatch"
+      },
+      "ItemsPatchOut": {
+        "properties": {
+          "changed": {
+            "type": "integer",
+            "title": "Changed"
+          },
+          "job": {
+            "$ref": "#/components/schemas/JobOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "changed",
+          "job"
+        ],
+        "title": "ItemsPatchOut"
+      },
+      "JobCreate": {
+        "properties": {
+          "sort": {
+            "$ref": "#/components/schemas/SortOrder",
+            "default": "newest_first"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "content": {
+            "$ref": "#/components/schemas/ContentFilter",
+            "default": "all"
+          },
+          "include_authors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Include Authors",
+            "default": []
+          },
+          "exclude_authors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Exclude Authors",
+            "default": []
+          },
+          "max_scanned": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Scanned"
+          }
+        },
+        "type": "object",
+        "title": "JobCreate",
+        "description": "Critères du nettoyage, et limite facultative de vignettes à lire (pour un essai)."
+      },
+      "JobOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "account_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Id"
+          },
+          "filters": {
+            "$ref": "#/components/schemas/CleanupFilters"
+          },
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "propertyNames": {
+              "$ref": "#/components/schemas/ItemStatus"
+            },
+            "type": "object",
+            "title": "Counts"
+          },
+          "to_process": {
+            "type": "integer",
+            "title": "To Process"
+          },
+          "running": {
+            "type": "boolean",
+            "title": "Running",
+            "description": "Une tâche de ce nettoyage tourne en ce moment."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "created_at",
+          "account_id",
+          "filters",
+          "counts",
+          "to_process",
+          "running"
+        ],
+        "title": "JobOut"
+      },
+      "JobStatus": {
+        "type": "string",
+        "enum": [
+          "created",
+          "collecting",
+          "ready",
+          "running",
+          "paused",
+          "completed",
+          "stopped",
+          "failed"
+        ],
+        "title": "JobStatus"
+      },
+      "MediaKind": {
+        "type": "string",
+        "enum": [
+          "photo",
+          "video",
+          "carousel"
+        ],
+        "title": "MediaKind",
+        "description": "Type de publication, tel que l'indique le libellé de la vignette."
+      },
+      "SessionStatusOut": {
+        "properties": {
+          "browser_open": {
+            "type": "boolean",
+            "title": "Browser Open"
+          },
+          "logged_in": {
+            "type": "boolean",
+            "title": "Logged In"
+          },
+          "account_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Id"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page",
+            "description": "Nature de la page affichée (accueil, connexion...)."
+          },
+          "challenge_required": {
+            "type": "boolean",
+            "title": "Challenge Required"
+          },
+          "consent_required": {
+            "type": "boolean",
+            "title": "Consent Required"
+          },
+          "busy": {
+            "type": "boolean",
+            "title": "Busy",
+            "description": "Une collecte ou un nettoyage est en cours."
+          }
+        },
+        "type": "object",
+        "required": [
+          "browser_open",
+          "logged_in",
+          "account_id",
+          "page",
+          "challenge_required",
+          "consent_required",
+          "busy"
+        ],
+        "title": "SessionStatusOut"
+      },
+      "SortOrder": {
+        "type": "string",
+        "enum": [
+          "newest_first",
+          "oldest_first"
+        ],
+        "title": "SortOrder"
+      },
+      "StartRequest": {
+        "properties": {
+          "limit": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit",
+            "description": "Nombre maximal de likes à retirer pendant cette exécution."
+          }
+        },
+        "type": "object",
+        "title": "StartRequest"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "APIKeyHeader": {
+        "type": "apiKey",
+        "description": "Jeton affiché par `iuc serve` au démarrage de l'API.",
+        "in": "header",
+        "name": "X-IUC-Token"
+      }
+    }
+  }
+}

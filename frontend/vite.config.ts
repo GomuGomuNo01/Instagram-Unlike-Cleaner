@@ -1,0 +1,18 @@
+import tailwindcss from '@tailwindcss/vite'
+import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vitest/config'
+
+// En développement (`npm run dev`), les appels /api sont relayés vers l'API lancée par
+// `iuc serve`. changeOrigin réécrit l'en-tête Host en 127.0.0.1, seul hôte accepté.
+export default defineConfig({
+  plugins: [react(), tailwindcss()],
+  server: {
+    proxy: {
+      '/api': { target: 'http://127.0.0.1:8765', changeOrigin: true },
+    },
+  },
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+  },
+})

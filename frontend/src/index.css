@@ -1,0 +1,80 @@
+@import 'tailwindcss';
+
+/* Thème sombre piloté par la classe « dark » sur <html> : choix mémorisé, sinon système. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Système de design
+ * Couleur principale (actions importantes) : indigo. Neutres : zinc.
+ * Espacements : échelle 4 / 8 / 12 / 16 / 24 / 32 / 48 / 64 px (classes 1, 2, 3, 4, 6, 8, 12, 16).
+ * Police : Inter, servie localement (aucune requête vers un service externe). */
+@theme {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+@layer base {
+  /* color-scheme aligne aussi les contrôles natifs (dates, cases, listes) sur le thème choisi. */
+  html {
+    color-scheme: light;
+    background-color: var(--color-white);
+    color: var(--color-zinc-900);
+    -webkit-font-smoothing: antialiased;
+    scroll-padding-top: 5rem; /* les ancres ne passent pas sous l'en-tête fixe */
+  }
+
+  html.dark {
+    color-scheme: dark;
+    background-color: var(--color-zinc-950);
+    color: var(--color-zinc-100);
+  }
+
+  /* Contour visible pour la navigation au clavier. */
+  :focus-visible {
+    outline: 2px solid var(--color-indigo-500);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* Hiérarchie typographique : titre d'accroche > H1 > H2 > H3 > texte courant > petit texte. */
+@layer components {
+  .text-display {
+    @apply text-4xl leading-tight font-semibold tracking-tight text-balance sm:text-5xl lg:text-6xl;
+  }
+
+  .text-h1 {
+    @apply text-3xl leading-tight font-semibold tracking-tight text-balance sm:text-4xl;
+  }
+
+  .text-h2 {
+    @apply text-2xl leading-snug font-semibold tracking-tight text-balance sm:text-3xl;
+  }
+
+  .text-h3 {
+    @apply text-lg leading-snug font-semibold;
+  }
+
+  .text-lead {
+    @apply text-lg leading-relaxed text-pretty text-zinc-600 dark:text-zinc-400;
+  }
+
+  .text-body {
+    @apply text-base leading-relaxed text-zinc-700 dark:text-zinc-300;
+  }
+
+  .text-small {
+    @apply text-sm leading-relaxed text-zinc-600 dark:text-zinc-400;
+  }
+
+  .eyebrow {
+    @apply text-sm font-semibold text-indigo-700 dark:text-indigo-300;
+  }
+}

@@ -15,6 +15,7 @@ from app.services.cleanup import start_job
 from app.services.jobs import (
     JobActionRefused,
     job_overview,
+    known_authors,
     list_jobs,
     set_excluded,
     stop_job,
@@ -29,7 +30,7 @@ def engine(tmp_path: Path) -> Iterator[Engine]:
     engine.dispose()
 
 
-def make_job(engine: Engine, status: JobStatus, authors: list[str]) -> int:
+def make_job(engine: Engine, status: JobStatus, authors: list[str | None]) -> int:
     with Session(engine) as db:
         job = Job(filters=CleanupFilters().model_dump(mode="json"), account_id="42", status=status)
         db.add(job)
@@ -161,3 +162,18 @@ def test_stop_refused_once_finished(engine: Engine, status: JobStatus) -> None:
 
     with pytest.raises(JobActionRefused, match="rien à arrêter"):
         stop_job(engine, job_id)
+
+
+def test_known_authors_counts_likes_still_in_place(engine: Engine) -> None:
+    first = make_job(engine, JobStatus.READY, ["a", "b", "a", None])
+    second = make_job(engine, JobStatus.COMPLETED, ["a"])
+    with Session(engine) as db:
+        # Le like « 0_1_1_n » (auteur a) a été retiré par le second nettoyage.
+        removed = db.exec(select(LikedItem).where(LikedItem.job_id == second)).one()
+        removed.status = ItemStatus.DONE
+        db.add(removed)
+        db.commit()
+
+    assert known_authors(engine, "42") == [("a", 1), ("b", 1)]
+    assert known_authors(engine, "autre compte") == []
+    assert first != second

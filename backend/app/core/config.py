@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     # Origines autorisées à appeler l'API depuis un navigateur : le serveur de développement
     # du frontend (Vite). L'interface compilée est servie par l'API elle-même.
     api_cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    # Interface compilée (`npm run build` dans frontend/), servie par l'API.
+    frontend_dist: Path = Path(__file__).resolve().parents[3] / "frontend" / "dist"
 
     @field_validator("log_level", mode="before")
     @classmethod

@@ -346,3 +346,21 @@ async def test_delete_session_and_local_data(
     assert data_deleted.status_code == 200
     assert any(path.endswith("iuc.db") for path in data_deleted.json()["deleted"])
     assert (await client.get("/api/jobs")).json() == []  # base neuve, toujours utilisable
+
+
+@pytest.mark.browser
+async def test_authors_come_from_collected_previews(
+    app: FastAPI, client: AsyncClient, fake_instagram: FakeInstagram
+) -> None:
+    assert (await client.get("/api/authors")).json() == []
+    await connect(app, client, fake_instagram, make_likes(8))
+    await create_preview(app, client)
+
+    authors = (await client.get("/api/authors")).json()
+
+    assert authors == [
+        {"author": "auteur.b", "likes": 2},
+        {"author": "auteur_a", "likes": 2},
+        {"author": "auteur_c", "likes": 2},
+        {"author": "auteur_d", "likes": 2},
+    ]

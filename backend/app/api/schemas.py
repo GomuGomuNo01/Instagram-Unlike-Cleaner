@@ -108,5 +108,10 @@ class StartRequest(BaseModel):
     )
 
 
+class AuthorOut(BaseModel):
+    author: str
+    likes: int = Field(description="Likes encore en place, d'après les aperçus collectés.")
+
+
 class DeletedOut(BaseModel):
     deleted: list[str]

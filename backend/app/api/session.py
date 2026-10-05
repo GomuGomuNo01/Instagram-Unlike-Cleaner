@@ -1,5 +1,7 @@
 """Routes de la session navigateur et des données locales."""
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.deps import StateDep
@@ -10,6 +12,8 @@ from app.browser.session import BrowserStartError
 from app.core.db import init_db, make_engine
 from app.core.logs import close_logging, setup_logging
 from app.services.local_data import LocalDataError, delete_browser_profile, delete_local_data
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["session"], dependencies=[Depends(require_token)])
 
@@ -61,6 +65,7 @@ async def delete_data(state: StateDep) -> DeletedOut:
         init_db(state.engine)
         if logging_was_open:
             setup_logging(state.settings)
+    logger.warning("Données locales supprimées depuis l'interface (%d éléments)", len(deleted))
     return DeletedOut(deleted=[str(path) for path in deleted])
 
 

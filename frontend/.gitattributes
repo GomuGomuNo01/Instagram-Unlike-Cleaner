@@ -1,0 +1,2 @@
+# Prettier attend des fins de ligne LF, y compris sous Windows (core.autocrlf).
+* text=auto eol=lf
