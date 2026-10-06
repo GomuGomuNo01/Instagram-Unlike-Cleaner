@@ -3,7 +3,7 @@
   "info": {
     "title": "IUC – API locale",
     "description": "API locale d'Instagram Unlike Cleaner. Toutes les routes /api exigent le jeton affiché par `iuc serve`, dans l'en-tête X-IUC-Token.",
-    "version": "1.1.0"
+    "version": "1.2.0"
   },
   "paths": {
     "/api/session/start": {
