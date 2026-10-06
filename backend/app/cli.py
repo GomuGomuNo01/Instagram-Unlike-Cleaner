@@ -14,6 +14,7 @@ import uvicorn
 from pydantic import ValidationError
 from sqlalchemy import Engine
 
+from app import __version__
 from app.api.security import TOKEN_HEADER, new_token
 from app.browser.probe import ProbeError, run_probe
 from app.browser.session import (
@@ -76,7 +77,7 @@ def main() -> None:
 @app.command()
 def version() -> None:
     """Affiche la version installée."""
-    typer.echo("0.1.0")
+    typer.echo(__version__)
 
 
 @app.command()

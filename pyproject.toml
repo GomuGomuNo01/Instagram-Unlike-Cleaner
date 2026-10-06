@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "iuc"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Nettoyage local et contrôlé des « J'aime » Instagram"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -36,6 +36,9 @@ package = [
 
 [project.scripts]
 iuc = "app.cli:app"
+
+[tool.hatch.version]
+path = "backend/app/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["backend/app"]

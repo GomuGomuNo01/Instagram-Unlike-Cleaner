@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 
+from app import __version__
 from app.api import jobs, session
 from app.api.security import TOKEN_HEADER, SecurityHeadersMiddleware, new_token
 from app.api.state import ApiConflict, ApiState, BrowserFactory, BrowserManager
@@ -59,7 +60,7 @@ def create_app(
 
     app = FastAPI(
         title="IUC – API locale",
-        version="0.1.0",
+        version=__version__,
         description=(
             "API locale d'Instagram Unlike Cleaner. Toutes les routes /api exigent le jeton "
             f"affiché par `iuc serve`, dans l'en-tête {TOKEN_HEADER}."

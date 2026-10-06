@@ -207,3 +207,13 @@ def test_purge_refuses_a_folder_with_other_files_before_asking(data_dir: Path) -
     assert "Mes documents" in result.output
     assert "Supprimer définitivement" not in result.output
     assert (data_dir / "iuc.db").exists()
+
+
+def test_version_is_the_single_package_version() -> None:
+    from importlib.metadata import version
+
+    from app import __version__
+
+    result = CliRunner().invoke(app, ["version"])
+
+    assert result.output.strip() == __version__ == version("iuc")

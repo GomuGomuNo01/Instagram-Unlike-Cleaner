@@ -5,7 +5,7 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-API%20locale-009688?logo=fastapi&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-287%20passés-1BAF7A)
+![Tests](https://img.shields.io/badge/tests-288%20passés-1BAF7A)
 [![CI](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/actions/workflows/ci.yml?query=branch%3Amain)
 
 Un outil **100 % local** qui retire en masse les likes Instagram, après validation de chaque like
@@ -200,7 +200,7 @@ Chaque garantie est appliquée dans le code et **prouvée par des tests**
 
 | Niveau | Cible | Outil | Résultat |
 |---|---|---|---|
-| Unitaires | Filtre d’Instagram, limites quotidiennes, pauses aléatoires, machine d’états, exports | pytest | 239 tests serveur passés |
+| Unitaires | Filtre d’Instagram, limites quotidiennes, pauses aléatoires, machine d’états, exports | pytest | 240 tests serveur passés |
 | Intégration | API et base SQLite, reprise après un arrêt | pytest, httpx | inclus ci-dessus |
 | Automatisation | Navigation et retrait sur une fausse page des likes, réseau coupé | Playwright | inclus ci-dessus |
 | Frontend | Composants, écran des critères, parcours principal, démo en ligne, tokens du système de design | Vitest, Testing Library | 48 tests passés |
