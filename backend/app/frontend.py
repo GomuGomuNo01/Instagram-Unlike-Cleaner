@@ -10,6 +10,7 @@ styles, polices, images et requêtes. Le navigateur refuse donc tout appel de l'
 vers un serveur tiers, et tout script injecté dans la page.
 """
 
+import html
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, status
@@ -17,6 +18,8 @@ from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 TOKEN_META = "iuc-token"
+# Dans GitHub Codespaces : adresse du bureau distant où s'affiche la fenêtre Chromium.
+DESKTOP_META = "iuc-desktop"
 CONTENT_SECURITY_POLICY = "; ".join(
     [
         "default-src 'self'",
@@ -54,7 +57,7 @@ et relance <code>iuc serve</code>.</p>
 </body></html>"""
 
 
-def mount_frontend(app: FastAPI, dist: Path, token: str) -> None:
+def mount_frontend(app: FastAPI, dist: Path, token: str, *, desktop: str | None = None) -> None:
     """Sert les fichiers de l'interface et renvoie index.html pour ses routes. À appeler
     après l'ajout des routes de l'API, qui restent prioritaires."""
     assets = dist / "assets"
@@ -72,7 +75,8 @@ def mount_frontend(app: FastAPI, dist: Path, token: str) -> None:
         index = dist / "index.html"
         if not index.is_file():
             return HTMLResponse(_NOT_BUILT, status.HTTP_503_SERVICE_UNAVAILABLE, _FALLBACK_HEADERS)
-        page = index.read_text(encoding="utf-8").replace(
-            "</head>", f'<meta name="{TOKEN_META}" content="{token}" />\n</head>', 1
-        )
+        metas = f'<meta name="{TOKEN_META}" content="{token}" />\n'
+        if desktop:
+            metas += f'<meta name="{DESKTOP_META}" content="{html.escape(desktop)}" />\n'
+        page = index.read_text(encoding="utf-8").replace("</head>", f"{metas}</head>", 1)
         return HTMLResponse(page, headers=_PAGE_HEADERS)

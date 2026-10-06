@@ -5,7 +5,7 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-API%20locale-009688?logo=fastapi&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-273%20passés-1BAF7A)
+![Tests](https://img.shields.io/badge/tests-282%20passés-1BAF7A)
 [![CI](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/actions/workflows/ci.yml?query=branch%3Amain)
 
 Un outil **100 % local** qui retire en masse les likes Instagram, après validation de chaque like
@@ -14,6 +14,10 @@ la ligne de commande et les preuves de sécurité.
 
 **[▶ Essayer la démo en ligne](https://gomugomuno01.github.io/Instagram-Unlike-Cleaner/)** : la vraie interface d’IUC, de la connexion au
 rapport, sur des likes fictifs. Sans installation, sans compte, sans connexion à Instagram.
+
+**[Tester la vraie version dans GitHub Codespaces](https://codespaces.new/GomuGomuNo01/Instagram-Unlike-Cleaner?quickstart=1)** : IUC complet, avec ton propre
+compte Instagram, dans une machine temporaire créée sur **ton** compte GitHub. Rien ne passe
+par un serveur du projet ([détails](#tester-la-vraie-version-en-ligne)).
 
 ![Démonstration du parcours, avec des données fictives](docs/images/demo.gif)
 
@@ -184,7 +188,7 @@ Chaque garantie est appliquée dans le code et **prouvée par des tests**
 | Alertes Instagram | Limite, vérification, déconnexion : arrêt immédiat, en pause, marche à suivre | Fausse page qui déconnecte, vérifie ou limite en plein nettoyage |
 | Reprise | Chaque lot enregistré avant le suivant | Interruption, pause, limite puis reprise |
 | Changement d’interface | Sélecteurs isolés ([`locators.py`](backend/app/browser/locators.py)), vérification au démarrage | Bouton absent, vignettes illisibles, bouton renommé |
-| API locale | 127.0.0.1, jeton par démarrage, contrôle de l’hôte, CORS restreint, en-têtes de sécurité | Tests de l’API et de `iuc serve` |
+| API locale | 127.0.0.1, jeton par démarrage, contrôle de l’hôte (plus, dans Codespaces, la seule adresse du Codespace), CORS restreint, en-têtes de sécurité | Tests de l’API, de `iuc serve` et de Codespaces |
 | Dépendances | Versions figées ([`constraints.txt`](constraints.txt), `package-lock.json`), audits | `pip-audit` et `npm audit` sans vulnérabilité connue |
 | Journaux | Aucun nom de compte aimé ni secret ; niveau réglable | Comptes « témoins » cherchés dans le journal |
 | Dépôt public | Aucun compte réellement aimé dans les fichiers versionnés | Test de garde sur la base locale |
@@ -193,10 +197,10 @@ Chaque garantie est appliquée dans le code et **prouvée par des tests**
 
 | Niveau | Cible | Outil | Résultat |
 |---|---|---|---|
-| Unitaires | Filtre d’Instagram, limites quotidiennes, pauses aléatoires, machine d’états, exports | pytest | 227 tests serveur passés |
+| Unitaires | Filtre d’Instagram, limites quotidiennes, pauses aléatoires, machine d’états, exports | pytest | 234 tests serveur passés |
 | Intégration | API et base SQLite, reprise après un arrêt | pytest, httpx | inclus ci-dessus |
 | Automatisation | Navigation et retrait sur une fausse page des likes, réseau coupé | Playwright | inclus ci-dessus |
-| Frontend | Composants, écran des critères, parcours principal, démo en ligne, tokens du système de design | Vitest, Testing Library | 46 tests passés |
+| Frontend | Composants, écran des critères, parcours principal, démo en ligne, tokens du système de design | Vitest, Testing Library | 48 tests passés |
 | Continu | Lint, typage, tests, audits | GitHub Actions | Python 3.11 et 3.14 |
 | Manuel | Un lot réel sur un compte de test | [Recette](docs/recette.md) | 1 493 likes recensés, lots retirés et vérifiés |
 
@@ -217,6 +221,7 @@ diagnostics réels : paquets de 18 vignettes, mode sélection, fenêtre de confi
 │   └── src/demo/       Fausse API de la démo en ligne (likes fictifs, dans le navigateur)
 ├── scripts/demo.py     Démonstration avec des données fictives
 ├── docs/               Recette manuelle, page portfolio, images
+├── .devcontainer/      Vraie version dans GitHub Codespaces (bureau distant, lancement)
 ├── constraints.txt     Versions figées des dépendances Python
 └── .github/workflows/  Intégration continue
 ```
@@ -239,6 +244,22 @@ serveur ; un nettoyage en cours passe en pause et pourra reprendre.
 **Essayer sans rien installer** : la [démo en ligne](https://gomugomuno01.github.io/Instagram-Unlike-Cleaner/) fait tourner la vraie interface
 sur une fausse API, dans le navigateur ; `npm run build:demo` la compile, et le workflow
 `demo.yml` la publie sur GitHub Pages à chaque mise à jour de `main`.
+
+### Tester la vraie version en ligne
+
+[![Ouvrir dans GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/GomuGomuNo01/Instagram-Unlike-Cleaner?quickstart=1)
+
+GitHub crée une machine temporaire sur **ton** compte GitHub (quota gratuit mensuel), installe
+IUC et le lance ([`.devcontainer/`](.devcontainer)). La fenêtre Chromium s’affiche dans un
+bureau distant, ouvert dans un autre onglet ; l’écran « Connexion » d’IUC y mène directement.
+
+- **Confidentialité** : mot de passe, session et likes restent dans ce Codespace, dont les ports
+  sont privés. Personne d’autre n’y a accès, pas même l’auteur du projet. Supprimer le
+  Codespace efface tout.
+- **Sécurité** : IUC accepte alors l’adresse de ce Codespace, et elle seule, en plus de
+  127.0.0.1 ([`codespaces.py`](backend/app/core/codespaces.py)) ; le jeton reste exigé.
+- **Limite** : la connexion part d’un centre de données ; Instagram peut demander une
+  vérification de sécurité. Compte secondaire conseillé.
 
 **Essayer en local sans compte Instagram** : `python scripts/demo.py` sert l’interface sur
 `http://127.0.0.1:8799`, avec trois nettoyages fictifs dans un dossier séparé.

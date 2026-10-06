@@ -1,8 +1,9 @@
 """Point d'entrée de l'API locale (FastAPI). Lancement : `iuc serve`.
 
-L'API n'écoute que sur 127.0.0.1 et n'accepte que les hôtes 127.0.0.1 et localhost. Seul
-le navigateur piloté par Playwright contacte Instagram ; l'API et la CLI passent par les
-mêmes services.
+L'API n'écoute que sur 127.0.0.1 et n'accepte que les hôtes 127.0.0.1 et localhost, plus,
+dans GitHub Codespaces, l'adresse propre au Codespace (voir core/codespaces.py). Seul le
+navigateur piloté par Playwright contacte Instagram ; l'API et la CLI passent par les mêmes
+services.
 """
 
 from collections.abc import AsyncIterator
@@ -17,6 +18,7 @@ from app.api import jobs, session
 from app.api.security import TOKEN_HEADER, SecurityHeadersMiddleware, new_token
 from app.api.state import ApiConflict, ApiState, BrowserFactory, BrowserManager
 from app.browser.session import BrowserSession
+from app.core.codespaces import desktop_url, forwarded_host
 from app.core.config import Settings, get_settings
 from app.core.db import init_db, make_engine
 from app.frontend import mount_frontend
@@ -71,7 +73,9 @@ def create_app(
         allow_headers=[TOKEN_HEADER, "Content-Type"],
     )
     # Refuse tout autre en-tête Host (protection contre le « DNS rebinding »).
-    app.add_middleware(TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS)
+    codespace_host = forwarded_host(settings.api_port)
+    allowed_hosts = [*ALLOWED_HOSTS, codespace_host] if codespace_host else ALLOWED_HOSTS
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
     # Ajouté en dernier, donc exécuté en premier : même un refus porte ces en-têtes.
     app.add_middleware(SecurityHeadersMiddleware)
 
@@ -82,5 +86,5 @@ def create_app(
     app.include_router(session.router)
     app.include_router(jobs.router)
     # En dernier : toute autre adresse renvoie l'interface (application à page unique).
-    mount_frontend(app, settings.frontend_dist, state.token)
+    mount_frontend(app, settings.frontend_dist, state.token, desktop=desktop_url())
     return app
