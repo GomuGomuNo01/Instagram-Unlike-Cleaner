@@ -29,7 +29,8 @@ jobs:
           cache: pip
           cache-dependency-path: constraints.txt
       - name: Dépendances (versions figées)
-        run: pip install -e ".[dev]" -c constraints.txt
+        # Extra « video » : numpy, pour vérifier aussi le typage des scripts de la vidéo.
+        run: pip install -e ".[dev,video]" -c constraints.txt
       - name: Chromium pour Playwright
         run: python -m playwright install --with-deps chromium
       - name: Lint
