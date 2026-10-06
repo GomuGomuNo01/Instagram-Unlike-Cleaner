@@ -5,19 +5,21 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-API%20locale-009688?logo=fastapi&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-285%20pass%C3%A9s-1BAF7A)
+![Tests](https://img.shields.io/badge/tests-288%20pass%C3%A9s-1BAF7A)
 [![Version](https://img.shields.io/github/v/release/GomuGomuNo01/Instagram-Unlike-Cleaner?label=version)](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/releases/latest)
 [![CI](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/actions/workflows/ci.yml?query=branch%3Amain)
 
 Projet de bout en bout : un outil **100 % local** qui retire en masse les likes Instagram d’une
 personne, après validation de chaque like ciblé, **sans jamais voir son mot de passe**. Essayé
-sur un vrai compte (**1 493 likes recensés en 14 minutes**) et prouvé par **285 tests
+sur un vrai compte (**1 493 likes recensés en 14 minutes**) et prouvé par **288 tests
 automatisés**.
 
 [![Essayer la démo en ligne](https://img.shields.io/badge/Essayer%20la%20d%C3%A9mo-en%20ligne%2C%20sans%20installation-4F46E5?style=for-the-badge)](https://gomugomuno01.github.io/Instagram-Unlike-Cleaner/)
 [![Télécharger pour Windows](https://img.shields.io/badge/T%C3%A9l%C3%A9charger-Windows%2C%20installeur-0078D4?style=for-the-badge)](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/releases/latest/download/IUC-Setup.exe)
+[![Voir la présentation](https://img.shields.io/badge/Voir%20la%20pr%C3%A9sentation-vid%C3%A9o%20de%2020%20s-7C3AED?style=for-the-badge)](https://gomugomuno01.github.io/Instagram-Unlike-Cleaner/presentation)
 
-*Démo : la vraie interface sur des likes fictifs, sans compte. Windows : installeur, ou
+*Présentation : l’application et son fonctionnement en 20 secondes de motion design. Démo :
+la vraie interface sur des likes fictifs, sans compte. Windows : installeur, ou
 [version portable](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/releases/latest/download/IUC-portable.zip)
 à lancer sans installation ; Chrome ou Edge requis. Notes de version sur la
 [page des releases](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/releases/latest).*
@@ -187,6 +189,7 @@ un test échoue si un module réseau apparaît dans son code.
 | **GitHub Actions** | Intégration continue et publication | Python 3.11 et 3.14, audits des dépendances, démo et application publiées automatiquement |
 | **GitHub Pages** | Démo en ligne | Gratuit, et aucun serveur du projet ne voit les données des utilisateurs |
 | **PyInstaller, Inno Setup, pystray** | Application Windows | Installeur ou version portable ; IUC tourne sans fenêtre, piloté depuis la zone de notification |
+| **Playwright, ffmpeg** | Vidéo de présentation | Animation CSS figée et capturée image par image, puis encodée en H.264 : régénérable à chaque évolution des écrans |
 
 ## 7. Méthodologie
 
@@ -267,7 +270,7 @@ Chaque garantie est appliquée dans le code et **prouvée par des tests**
 | Unitaires | Filtre d’Instagram, limites quotidiennes, pauses aléatoires, machine d’états, exports | pytest | 235 tests serveur passés |
 | Intégration | API et base SQLite, reprise après un arrêt | pytest, httpx | inclus ci-dessus |
 | Automatisation | Navigation et retrait sur une fausse page des likes, réseau coupé | Playwright | inclus ci-dessus |
-| Frontend | Composants, écran des critères, parcours principal, démo en ligne, tokens du système de design | Vitest, Testing Library | 50 tests passés |
+| Frontend | Composants, écran des critères, parcours principal, démo en ligne, présentation, tokens du système de design | Vitest, Testing Library | 53 tests passés |
 | Application Windows | Démarrage réel d’`IUC.exe` avant chaque publication | GitHub Actions (Windows) | interface servie |
 | Continu | Lint, typage, tests, audits | GitHub Actions | Python 3.11 et 3.14 |
 | Manuel | Un lot réel sur un compte de test | [Recette](docs/recette.md) | 1 493 likes recensés, lots retirés et vérifiés |
@@ -289,6 +292,12 @@ de passe et les sessions Instagram des utilisateurs.
 
 ▶ **[Essayer la démo en ligne](https://gomugomuno01.github.io/Instagram-Unlike-Cleaner/)**, ou
 📥 **[télécharger IUC pour Windows](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/releases/latest/download/IUC-Setup.exe)**.
+
+[![Présentation vidéo d’IUC, 20 secondes](frontend/public/presentation-poster.jpg)](https://gomugomuno01.github.io/Instagram-Unlike-Cleaner/presentation)
+
+*La présentation vidéo (20 s, 1080p) : cliquer pour la regarder dans l’onglet « Présentation »
+de la démo. Elle est rendue image par image à partir d’une animation du dépôt
+([`docs/video/presentation.html`](docs/video/presentation.html)), avec les écrans d’IUC.*
 
 | Écran | Contenu |
 |---|---|
@@ -327,8 +336,8 @@ rien retirer de plus, en pause, avec la marche à suivre :
 
 ### Qualité du code
 
-- **285 tests automatisés** : 235 côté serveur (dont l’automatisation sur la fausse page, réseau
-  coupé), 50 côté interface.
+- **288 tests automatisés** : 235 côté serveur (dont l’automatisation sur la fausse page, réseau
+  coupé), 53 côté interface.
 - Lint et **typage strict** des deux côtés (Ruff, mypy, Oxlint, TypeScript) à chaque envoi.
 - **Aucune vulnérabilité connue** dans les dépendances (`pip-audit`, `npm audit`), versions figées.
 - Application Windows **démarrée réellement** par l’intégration continue avant chaque publication.
@@ -384,8 +393,8 @@ Instagram-Unlike-Cleaner/
 │   └── tests/                Tests, dont la fausse version d’Instagram
 ├── frontend/                 Interface React (Vite, TypeScript, Tailwind)
 │   └── src/demo/             Fausse API de la démo en ligne (likes fictifs, dans le navigateur)
-├── scripts/demo.py           Démonstration locale avec des données fictives
-├── docs/                     Recette manuelle, page portfolio, images
+├── scripts/                  demo.py (démonstration locale), render_presentation.py (vidéo)
+├── docs/                     Recette manuelle, page portfolio, images, animation de la vidéo
 ├── packaging/                Application Windows (PyInstaller, Inno Setup)
 ├── constraints.txt           Versions figées des dépendances Python
 └── .github/workflows/        Intégration continue, démo en ligne, application Windows
@@ -421,7 +430,9 @@ iuc serve                       # interface sur http://127.0.0.1:8765, Ctrl+C po
 ```
 
 Sans compte Instagram : `python scripts/demo.py` sert l’interface sur `http://127.0.0.1:8799`
-avec trois nettoyages fictifs ; `npm run build:demo` compile la démo en ligne.
+avec trois nettoyages fictifs ; `npm run build:demo` compile la démo en ligne. La vidéo de
+présentation se régénère avec `pip install -e ".[video]" -c constraints.txt`, puis
+`python scripts/render_presentation.py` (environ 4 minutes en 1080p).
 
 <details>
 <summary><b>Commandes de la CLI</b></summary>

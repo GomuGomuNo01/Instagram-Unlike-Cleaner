@@ -12,5 +12,7 @@ repos:
       - id: end-of-file-fixer
       - id: check-yaml
       - id: check-added-large-files
+        # Seule exception : la vidéo de présentation (environ 3,5 Mo), servie par la démo.
+        exclude: ^frontend/public/presentation\.mp4$
       - id: check-merge-conflict
       - id: detect-private-key

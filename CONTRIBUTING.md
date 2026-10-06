@@ -42,7 +42,9 @@ Définition de « terminé » :
 - documentation mise à jour ;
 - démo en ligne alignée sur l’API : une route ou un champ ajouté au backend se reproduit dans
   la fausse API de `frontend/src/demo/` (vérifier avec `npm run build:demo` puis
-  `npm run preview:demo`).
+  `npm run preview:demo`) ;
+- vidéo de présentation à jour si un écran montré change : modifier
+  `docs/video/presentation.html`, puis `python scripts/render_presentation.py` (extra « video »).
 
 ## Quand Instagram change son interface
 

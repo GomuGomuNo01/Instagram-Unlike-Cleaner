@@ -1,0 +1,1061 @@
+<!doctype html>
+<!--
+  Vidéo de présentation d'IUC (20 s, 1920 × 1080), en motion design.
+  Chaque élément est animé en CSS ; window.seek(ms) fige toute la scène à un instant donné,
+  ce qui permet de la capturer image par image (scripts/render_presentation.py).
+  Ouvrir avec ?play pour la regarder en temps réel dans un navigateur.
+  Comptes et chiffres affichés : fictifs ou issus de la recette du projet.
+-->
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title>IUC · Présentation (source de la vidéo)</title>
+    <style>
+      @font-face {
+        font-family: 'Inter Variable';
+        font-weight: 100 900;
+        src: url('../../frontend/node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2')
+          format('woff2');
+      }
+
+      :root {
+        --bg: #09090b;
+        --surface: #18181b;
+        --surface-2: #27272a;
+        --border: #2f2f35;
+        --border-strong: #3f3f46;
+        --fg: #fafafa;
+        --muted: #a1a1aa;
+        --subtle: #71717a;
+        --primary: #4f46e5;
+        --primary-2: #6366f1;
+        --primary-light: #a5b4fc;
+        --primary-soft: rgba(99, 102, 241, 0.16);
+        --success: #34d399;
+        --success-soft: rgba(16, 185, 129, 0.16);
+        --danger: #f87171;
+        --out: cubic-bezier(0.22, 1, 0.36, 1);
+        --in: cubic-bezier(0.55, 0, 1, 0.45);
+        --in-out: cubic-bezier(0.65, 0, 0.35, 1);
+        --pop: cubic-bezier(0.34, 1.4, 0.64, 1);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+      }
+
+      html,
+      body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: var(--bg);
+      }
+
+      body {
+        position: relative;
+        color: var(--fg);
+        font-family: 'Inter Variable', system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* --- Fond : lueurs qui dérivent et trame de points --------------------------------- */
+      .glow {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(120px);
+        opacity: 0.55;
+      }
+      .glow-a {
+        width: 900px;
+        height: 900px;
+        left: 980px;
+        top: -260px;
+        background: #4338ca;
+        animation: drift-a 20s var(--in-out) both;
+      }
+      .glow-b {
+        width: 700px;
+        height: 700px;
+        left: -200px;
+        top: 520px;
+        background: #6d28d9;
+        opacity: 0.35;
+        animation: drift-b 20s var(--in-out) both;
+      }
+      @keyframes drift-a {
+        0% { transform: translate(0, 0); }
+        50% { transform: translate(-520px, 260px); }
+        100% { transform: translate(-120px, 120px); }
+      }
+      @keyframes drift-b {
+        0% { transform: translate(0, 0); }
+        50% { transform: translate(700px, -220px); }
+        100% { transform: translate(1100px, -380px); }
+      }
+      .dots {
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1.5px, transparent 1.5px);
+        background-size: 36px 36px;
+        mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+      }
+
+      /* --- Animations génériques ---------------------------------------------------------- */
+      @keyframes rise {
+        from { opacity: 0; transform: translateY(48px); filter: blur(10px); }
+        to { opacity: 1; transform: none; filter: blur(0); }
+      }
+      @keyframes fade {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      @keyframes pop {
+        from { opacity: 0; transform: scale(0.4); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      @keyframes slide-in {
+        from { opacity: 0; transform: translateX(80px); filter: blur(8px); }
+        to { opacity: 1; transform: none; filter: blur(0); }
+      }
+      @keyframes scene-out {
+        from { opacity: 1; transform: none; filter: blur(0); }
+        to { opacity: 0; transform: scale(0.96) translateY(-24px); filter: blur(12px); }
+      }
+
+      .scene {
+        position: absolute;
+        inset: 0;
+      }
+
+      /* --- Scène 1 : logo, titre, accroche ------------------------------------------------ */
+      .s1 {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        animation: scene-out 450ms var(--in) 2750ms both;
+      }
+      .logo {
+        width: 220px;
+        height: 220px;
+        animation: pop 800ms var(--pop) 150ms both;
+      }
+      .logo .tile {
+        animation: fade 500ms var(--out) 150ms both;
+      }
+      .logo .heart {
+        stroke-dasharray: 60;
+        stroke-dashoffset: 60;
+        animation: draw 800ms var(--in-out) 450ms both;
+      }
+      .logo .strike {
+        stroke-dasharray: 24;
+        stroke-dashoffset: 24;
+        animation: draw 380ms var(--out) 1150ms both;
+      }
+      @keyframes draw {
+        to { stroke-dashoffset: 0; }
+      }
+      .s1 h1 {
+        margin-top: 56px;
+        font-size: 104px;
+        font-weight: 680;
+        letter-spacing: -0.035em;
+        animation: rise 700ms var(--out) 950ms both;
+      }
+      .s1 h1 em {
+        font-style: normal;
+        background: linear-gradient(90deg, #a5b4fc, #c4b5fd);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .s1 p {
+        margin-top: 28px;
+        font-size: 42px;
+        color: var(--muted);
+        animation: rise 700ms var(--out) 1400ms both;
+      }
+      .heart-float {
+        position: absolute;
+        bottom: -120px;
+        width: 64px;
+        height: 64px;
+        color: var(--primary-light);
+        opacity: 0;
+        animation: float-up 2600ms var(--out) both;
+      }
+      @keyframes float-up {
+        0% { opacity: 0; transform: translateY(0) scale(0.6) rotate(-10deg); }
+        25% { opacity: 0.55; }
+        100% { opacity: 0; transform: translateY(-900px) scale(1.1) rotate(12deg); }
+      }
+
+      /* --- Scène 2 : le problème ---------------------------------------------------------- */
+      .s2 {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        animation: scene-out 450ms var(--in) 5800ms both;
+      }
+      .eyebrow {
+        font-size: 30px;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--primary-light);
+      }
+      .s2 .eyebrow {
+        animation: rise 600ms var(--out) 3250ms both;
+      }
+      .counter {
+        margin-top: 12px;
+        font-size: 230px;
+        font-weight: 720;
+        letter-spacing: -0.045em;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+        background: linear-gradient(180deg, #fff 30%, #a5b4fc);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        animation: rise 600ms var(--out) 3300ms both;
+      }
+      .s2 .unit {
+        font-size: 40px;
+        color: var(--muted);
+        animation: rise 600ms var(--out) 3500ms both;
+      }
+      .verdicts {
+        margin-top: 64px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        align-items: flex-start;
+      }
+      .verdict {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        font-size: 40px;
+        color: var(--muted);
+      }
+      .verdict .mark {
+        display: grid;
+        place-items: center;
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: rgba(248, 113, 113, 0.14);
+        color: var(--danger);
+        font-size: 30px;
+        font-weight: 700;
+      }
+      .verdict.good {
+        color: var(--fg);
+        font-weight: 620;
+      }
+      .verdict.good .mark {
+        background: var(--success-soft);
+        color: var(--success);
+      }
+      .verdict .line {
+        position: absolute;
+        left: 72px;
+        right: -8px;
+        top: 50%;
+        height: 3px;
+        background: var(--danger);
+        transform-origin: left;
+        transform: scaleX(0);
+      }
+      .v1 { animation: slide-in 550ms var(--out) 4300ms both; }
+      .v1 .line { animation: strike 400ms var(--in-out) 4800ms both; }
+      .v2 { animation: slide-in 550ms var(--out) 4650ms both; }
+      .v2 .line { animation: strike 400ms var(--in-out) 5150ms both; }
+      .v3 { animation: slide-in 550ms var(--out) 5150ms both; }
+      @keyframes strike {
+        from { transform: scaleX(0); }
+        to { transform: scaleX(1); }
+      }
+
+      /* --- Suivi des étapes (scènes 3 à 6) ----------------------------------------------- */
+      .tracker {
+        position: absolute;
+        top: 72px;
+        left: 160px;
+        right: 160px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+        animation: fade 500ms var(--out) 6200ms both, tracker-out 400ms var(--in) 18650ms forwards;
+      }
+      @keyframes tracker-out {
+        from { opacity: 1; }
+        to { opacity: 0; }
+      }
+      .track {
+        font-size: 24px;
+        font-weight: 600;
+        color: var(--subtle);
+      }
+      .track .bar {
+        height: 6px;
+        margin-bottom: 14px;
+        border-radius: 3px;
+        background: var(--surface-2);
+        overflow: hidden;
+      }
+      .track .fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary), #8b5cf6);
+        transform-origin: left;
+        transform: scaleX(0);
+      }
+      .track .label {
+        animation: label-on 300ms var(--out) both;
+      }
+      @keyframes label-on {
+        from { color: var(--subtle); }
+        to { color: var(--fg); }
+      }
+      .t1 .fill { animation: strike 3200ms linear 6300ms both; }
+      .t1 .label { animation-delay: 6300ms; }
+      .t2 .fill { animation: strike 3200ms linear 9500ms both; }
+      .t2 .label { animation-delay: 9500ms; }
+      .t3 .fill { animation: strike 3200ms linear 12700ms both; }
+      .t3 .label { animation-delay: 12700ms; }
+      .t4 .fill { animation: strike 2900ms linear 15900ms both; }
+      .t4 .label { animation-delay: 15900ms; }
+
+      /* --- Mise en page commune des étapes ------------------------------------------------ */
+      .step {
+        display: grid;
+        grid-template-columns: 720px 860px;
+        gap: 120px;
+        align-items: center;
+        padding: 150px 160px 0;
+      }
+      .step .eyebrow {
+        font-size: 26px;
+      }
+      .step h2 {
+        margin-top: 24px;
+        font-size: 92px;
+        font-weight: 680;
+        line-height: 1.04;
+        letter-spacing: -0.035em;
+      }
+      .step .sub {
+        margin-top: 32px;
+        font-size: 34px;
+        line-height: 1.45;
+        color: var(--muted);
+      }
+      .card {
+        border: 1px solid var(--border);
+        border-radius: 32px;
+        background: rgba(24, 24, 27, 0.92);
+        box-shadow: 0 40px 120px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        padding: 44px;
+      }
+      .card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 30px;
+        font-weight: 640;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 18px;
+        border-radius: 999px;
+        font-size: 22px;
+        font-weight: 600;
+        background: var(--primary-soft);
+        color: var(--primary-light);
+      }
+      .badge.ok {
+        background: var(--success-soft);
+        color: var(--success);
+      }
+      .badge::before {
+        content: '';
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+
+      /* --- Scène 3 : connexion ------------------------------------------------------------ */
+      .s3 { animation: scene-out 450ms var(--in) 9050ms both; }
+      .s3 .text > * { animation: rise 650ms var(--out) both; }
+      .s3 .eyebrow { animation-delay: 6350ms !important; }
+      .s3 h2 { animation-delay: 6500ms !important; }
+      .s3 .sub { animation-delay: 6750ms !important; }
+      .s3 .card { animation: slide-in 750ms var(--out) 6600ms both; }
+      .field {
+        margin-top: 28px;
+        height: 84px;
+        border: 1px solid var(--border-strong);
+        border-radius: 18px;
+        padding: 0 28px;
+        display: flex;
+        align-items: center;
+        font-size: 30px;
+        color: var(--subtle);
+      }
+      .field .typed {
+        color: var(--fg);
+        overflow: hidden;
+        white-space: nowrap;
+        width: 0;
+      }
+      .f1 .typed { animation: type 700ms steps(14) 7200ms both; }
+      .f2 .typed { animation: type 600ms steps(10) 7700ms both; letter-spacing: 0.25em; }
+      @keyframes type {
+        from { width: 0; }
+        to { width: 100%; }
+      }
+      .checks {
+        margin-top: 36px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+      .check {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        font-size: 30px;
+      }
+      .check i {
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: var(--success-soft);
+        color: var(--success);
+        font-style: normal;
+        font-weight: 800;
+        font-size: 24px;
+      }
+      .c1 { animation: rise 500ms var(--out) 8000ms both; }
+      .c2 { animation: rise 500ms var(--out) 8200ms both; }
+      .c3 { animation: rise 500ms var(--out) 8400ms both; }
+      .lock {
+        margin-top: 36px;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        padding: 22px 26px;
+        border-radius: 18px;
+        background: var(--primary-soft);
+        color: var(--primary-light);
+        font-size: 28px;
+        font-weight: 600;
+        animation: pop 600ms var(--pop) 8600ms both;
+      }
+
+      /* --- Scène 4 : filtre d'Instagram --------------------------------------------------- */
+      .s4 { animation: scene-out 450ms var(--in) 12250ms both; }
+      .s4 .text > * { animation: rise 650ms var(--out) both; }
+      .s4 .eyebrow { animation-delay: 9550ms !important; }
+      .s4 h2 { animation-delay: 9700ms !important; }
+      .s4 .sub { animation-delay: 9950ms !important; }
+      .s4 .card { animation: slide-in 750ms var(--out) 9800ms both; position: relative; }
+      .group-label {
+        margin-top: 30px;
+        font-size: 24px;
+        font-weight: 650;
+        color: var(--muted);
+      }
+      .radio-row {
+        margin-top: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 30px;
+      }
+      .radio {
+        position: relative;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        border: 2px solid var(--border-strong);
+      }
+      .radio .dot {
+        position: absolute;
+        inset: 6px;
+        border-radius: 50%;
+        background: var(--primary-2);
+      }
+      .r1 .dot { animation: dot-off 200ms var(--out) 10950ms both; }
+      .r2 .dot { animation: pop 300ms var(--pop) 10950ms both; }
+      @keyframes dot-off {
+        from { transform: scale(1); }
+        to { transform: scale(0); }
+      }
+      .selects {
+        margin-top: 14px;
+        display: grid;
+        grid-template-columns: 1.3fr 0.8fr 1fr;
+        gap: 14px;
+      }
+      .select {
+        position: relative;
+        height: 66px;
+        border: 1px solid var(--border-strong);
+        border-radius: 14px;
+        padding: 0 22px;
+        display: flex;
+        align-items: center;
+        font-size: 27px;
+      }
+      .select .v {
+        animation: fade 250ms var(--out) both;
+      }
+      .select::after {
+        content: '';
+        position: absolute;
+        right: 20px;
+        width: 12px;
+        height: 12px;
+        border-right: 2px solid var(--subtle);
+        border-bottom: 2px solid var(--subtle);
+        transform: translateY(-4px) rotate(45deg);
+      }
+      .d1 .v { animation-delay: 11300ms; }
+      .d2 .v { animation-delay: 11600ms; }
+      .apply {
+        margin-top: 34px;
+        height: 76px;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        background: var(--primary);
+        font-size: 30px;
+        font-weight: 650;
+        animation: press 300ms var(--out) 11950ms both;
+      }
+      /* Seconde animation d'un élément : « forwards », pour ne rien imposer avant son début. */
+      @keyframes press {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.6); }
+        40% { transform: scale(0.96); }
+        100% { transform: scale(1); box-shadow: 0 0 0 22px rgba(99, 102, 241, 0); }
+      }
+
+      /* --- Curseur ------------------------------------------------------------------------- */
+      .cursor {
+        position: absolute;
+        width: 44px;
+        height: 44px;
+        filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5));
+        z-index: 5;
+      }
+      /* Pointe du curseur à (7 px, 4 px) de son coin : positions calées sur les cibles. */
+      .cursor-4 { animation: path-4 2400ms linear 9700ms both; }
+      @keyframes path-4 {
+        0% { left: 1900px; top: 1060px; opacity: 0; animation-timing-function: var(--in-out); }
+        10% { opacity: 1; }
+        42% { left: 1790px; top: 499px; animation-timing-function: linear; }
+        50% { left: 1790px; top: 499px; animation-timing-function: var(--in-out); }
+        62% { left: 1193px; top: 624px; animation-timing-function: linear; }
+        68% { left: 1193px; top: 624px; animation-timing-function: var(--in-out); }
+        76% { left: 1193px; top: 763px; animation-timing-function: linear; }
+        82% { left: 1193px; top: 763px; animation-timing-function: var(--in-out); }
+        92%, 100% { left: 1423px; top: 868px; opacity: 1; }
+      }
+      .cursor-5 { animation: path-5 1700ms var(--in-out) 12900ms both, fade-away 300ms var(--in) 15000ms forwards; }
+      @keyframes path-5 {
+        0% { left: 1900px; top: 1060px; opacity: 0; }
+        20% { opacity: 1; }
+        76%, 100% { left: 1056px; top: 618px; opacity: 1; }
+      }
+      @keyframes fade-away {
+        from { opacity: 1; }
+        to { opacity: 0; }
+      }
+
+      /* --- Scène 5 : aperçu ---------------------------------------------------------------- */
+      .s5 { animation: scene-out 450ms var(--in) 15450ms both; }
+      .s5 .text > * { animation: rise 650ms var(--out) both; }
+      .s5 .eyebrow { animation-delay: 12750ms !important; }
+      .s5 h2 { animation-delay: 12900ms !important; }
+      .s5 .sub { animation-delay: 13150ms !important; }
+      .s5 .card { animation: slide-in 750ms var(--out) 12850ms both; }
+      .count {
+        position: relative;
+        margin-top: 8px;
+        height: 36px;
+        font-size: 26px;
+        color: var(--muted);
+      }
+      .count span {
+        position: absolute;
+        left: 0;
+      }
+      .count .before { animation: count-out 250ms var(--out) 14250ms both; }
+      .count .after { animation: fade 250ms var(--out) 14300ms both; }
+      @keyframes count-out {
+        from { opacity: 1; }
+        to { opacity: 0; }
+      }
+      .rows {
+        margin-top: 22px;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        padding: 16px 0;
+        border-top: 1px solid var(--border);
+      }
+      .row:nth-child(1) { animation: rise 450ms var(--out) 13250ms both; }
+      .row:nth-child(2) { animation: rise 450ms var(--out) 13350ms both; }
+      .row:nth-child(3) { animation: rise 450ms var(--out) 13450ms both, keep 300ms var(--out) 14250ms forwards; }
+      .row:nth-child(4) { animation: rise 450ms var(--out) 13550ms both; }
+      .row:nth-child(5) { animation: rise 450ms var(--out) 13650ms both; }
+      @keyframes keep {
+        from { opacity: 1; }
+        to { opacity: 0.5; }
+      }
+      .box {
+        position: relative;
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        border: 2px solid var(--border-strong);
+      }
+      .box .on {
+        position: absolute;
+        inset: -2px;
+        border-radius: 10px;
+        background: var(--primary-2);
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-size: 22px;
+        font-weight: 800;
+      }
+      .row:nth-child(3) .box .on { animation: dot-off 200ms var(--out) 14200ms both; }
+      .avatar {
+        display: grid;
+        place-items: center;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        font-size: 20px;
+        font-weight: 700;
+        background: var(--surface-2);
+        color: var(--primary-light);
+      }
+      .who {
+        flex: 1;
+      }
+      .who b {
+        display: block;
+        font-size: 28px;
+        font-weight: 620;
+      }
+      .who small {
+        font-size: 22px;
+        color: var(--subtle);
+      }
+      .kept {
+        padding: 6px 16px;
+        border-radius: 999px;
+        background: var(--surface-2);
+        color: var(--fg);
+        font-size: 22px;
+        font-weight: 600;
+        animation: pop 350ms var(--pop) 14350ms both;
+      }
+      .launch {
+        margin-top: 22px;
+        height: 72px;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        background: var(--primary);
+        font-size: 28px;
+        font-weight: 650;
+        animation: fade 400ms var(--out) 13800ms both, press 400ms var(--out) 14950ms forwards;
+      }
+
+      /* --- Scène 6 : nettoyage ------------------------------------------------------------- */
+      .s6 { animation: scene-out 450ms var(--in) 18550ms both; }
+      .s6 .text > * { animation: rise 650ms var(--out) both; }
+      .s6 .eyebrow { animation-delay: 15950ms !important; }
+      .s6 h2 { animation-delay: 16100ms !important; }
+      .s6 .chips { animation-delay: 16400ms !important; }
+      .s6 .card { animation: slide-in 750ms var(--out) 16000ms both; }
+      .chips {
+        margin-top: 40px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+      }
+      .chip {
+        padding: 12px 22px;
+        border-radius: 999px;
+        border: 1px solid var(--border-strong);
+        font-size: 26px;
+        color: var(--fg);
+      }
+      .live {
+        display: inline-flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .live::before {
+        content: '';
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--success);
+        box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.6);
+        animation: ping 1000ms ease-out 16000ms 3 both;
+      }
+      @keyframes ping {
+        to { box-shadow: 0 0 0 16px rgba(52, 211, 153, 0); }
+      }
+      .pct {
+        font-size: 30px;
+        font-variant-numeric: tabular-nums;
+        color: var(--muted);
+      }
+      .progress {
+        margin-top: 26px;
+        height: 18px;
+        border-radius: 9px;
+        background: var(--surface-2);
+        overflow: hidden;
+      }
+      .progress .fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary), #8b5cf6);
+        transform-origin: left;
+        animation: strike 1900ms var(--in-out) 16300ms both;
+      }
+      .stats {
+        margin-top: 28px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+      }
+      .stat {
+        padding: 18px 22px;
+        border-radius: 18px;
+        background: rgba(39, 39, 42, 0.7);
+      }
+      .stat small {
+        display: block;
+        font-size: 21px;
+        color: var(--muted);
+      }
+      .stat b {
+        font-size: 32px;
+        font-variant-numeric: tabular-nums;
+      }
+      .log {
+        margin-top: 26px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        font-size: 24px;
+        color: var(--muted);
+      }
+      .log div {
+        display: flex;
+        gap: 18px;
+      }
+      .log time {
+        color: var(--subtle);
+        font-variant-numeric: tabular-nums;
+      }
+      .l1 { animation: rise 400ms var(--out) 16700ms both; }
+      .l2 { animation: rise 400ms var(--out) 17200ms both; }
+      .l3 { animation: rise 400ms var(--out) 17700ms both; }
+      .done {
+        margin-top: 26px;
+        animation: pop 450ms var(--pop) 18200ms both;
+      }
+
+      /* --- Scène 7 : conclusion ------------------------------------------------------------ */
+      .s7 {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+      .s7 .logo {
+        width: 150px;
+        height: 150px;
+        animation: pop 650ms var(--pop) 18800ms both;
+      }
+      .s7 .logo .tile,
+      .s7 .logo .heart,
+      .s7 .logo .strike {
+        animation: none;
+        stroke-dashoffset: 0;
+      }
+      .s7 h3 {
+        margin-top: 36px;
+        font-size: 84px;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        animation: rise 600ms var(--out) 18950ms both;
+      }
+      .s7 .promise {
+        margin-top: 20px;
+        font-size: 36px;
+        color: var(--muted);
+        animation: rise 600ms var(--out) 19100ms both;
+      }
+      .ctas {
+        margin-top: 48px;
+        display: flex;
+        gap: 22px;
+        animation: rise 600ms var(--out) 19250ms both;
+      }
+      .cta {
+        padding: 22px 40px;
+        border-radius: 999px;
+        font-size: 30px;
+        font-weight: 650;
+        border: 1px solid var(--border-strong);
+      }
+      .cta.primary {
+        background: var(--primary);
+        border-color: var(--primary);
+      }
+      .url {
+        margin-top: 36px;
+        font-size: 26px;
+        color: var(--subtle);
+        animation: fade 600ms var(--out) 19400ms both;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="glow glow-a"></div>
+    <div class="glow glow-b"></div>
+    <div class="dots"></div>
+
+    <!-- Cœurs de l'introduction, derrière le logo -->
+    <div id="hearts"></div>
+
+    <!-- Scène 1 : logo et accroche (0 à 3,2 s) -->
+    <section class="scene s1">
+      <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
+        <rect class="tile" width="32" height="32" rx="8" fill="#4f46e5" />
+        <path class="heart" d="M16 25s-8-4.8-8-10.4A4.6 4.6 0 0 1 16 12a4.6 4.6 0 0 1 8 2.6C24 20.2 16 25 16 25z" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round" />
+        <path class="strike" d="M8 8l16 17" stroke="#fff" stroke-width="2.2" stroke-linecap="round" />
+      </svg>
+      <h1>Instagram <em>Unlike</em> Cleaner</h1>
+      <p>Des années de « J’aime » effacés, sans confier ton mot de passe.</p>
+    </section>
+
+    <!-- Scène 2 : le problème (3,2 à 6,2 s) -->
+    <section class="scene s2">
+      <div class="eyebrow">Le problème</div>
+      <div class="counter" id="counter">0</div>
+      <div class="unit">likes accumulés au fil des années</div>
+      <div class="verdicts">
+        <div class="verdict v1"><span class="mark">✕</span>À la main : des heures de clics<span class="line"></span></div>
+        <div class="verdict v2"><span class="mark">✕</span>Outils en ligne : ton mot de passe en jeu<span class="line"></span></div>
+        <div class="verdict good v3"><span class="mark">✓</span>IUC : tout en local, en quelques clics</div>
+      </div>
+    </section>
+
+    <!-- Suivi des quatre étapes (6,2 à 19 s) -->
+    <div class="tracker">
+      <div class="track t1"><div class="bar"><div class="fill"></div></div><span class="label">1 · Connexion</span></div>
+      <div class="track t2"><div class="bar"><div class="fill"></div></div><span class="label">2 · Filtre d’Instagram</span></div>
+      <div class="track t3"><div class="bar"><div class="fill"></div></div><span class="label">3 · Aperçu</span></div>
+      <div class="track t4"><div class="bar"><div class="fill"></div></div><span class="label">4 · Nettoyage</span></div>
+    </div>
+
+    <!-- Scène 3 : connexion (6,2 à 9,5 s) -->
+    <section class="scene step s3">
+      <div class="text">
+        <div class="eyebrow">Étape 1 · Connexion</div>
+        <h2>Tu te connectes<br />toi-même.</h2>
+        <p class="sub">Dans une fenêtre dédiée, double authentification comprise.</p>
+      </div>
+      <div class="card">
+        <div class="card-head">Instagram <span class="badge ok">fenêtre dédiée</span></div>
+        <div class="field f1"><span class="typed">ton.compte</span></div>
+        <div class="field f2"><span class="typed">••••••••••</span></div>
+        <div class="checks">
+          <div class="check c1"><i>✓</i>Connexion faite par toi, 2FA comprise</div>
+          <div class="check c2"><i>✓</i>Session reprise automatiquement</div>
+          <div class="check c3"><i>✓</i>Page de tes likes accessible</div>
+        </div>
+        <div class="lock">🔒 Mot de passe lu ou stocké par IUC : jamais</div>
+      </div>
+    </section>
+
+    <!-- Scène 4 : filtre d'Instagram (9,5 à 12,7 s) -->
+    <section class="scene step s4">
+      <div class="text">
+        <div class="eyebrow">Étape 2 · Filtre d’Instagram</div>
+        <h2>Les réglages<br />d’Instagram.</h2>
+        <p class="sub">Tri, date de début, date de fin du like : IUC remplit le panneau pour toi.</p>
+      </div>
+      <div class="card">
+        <div class="card-head">Trier et filtrer <span class="badge">Filtre d’Instagram</span></div>
+        <div class="group-label">Trier par</div>
+        <div class="radio-row r1">Du plus récent au plus ancien <span class="radio"><span class="dot"></span></span></div>
+        <div class="radio-row r2">Du plus ancien au plus récent <span class="radio"><span class="dot"></span></span></div>
+        <div class="group-label">Date de début</div>
+        <div class="selects d1">
+          <div class="select"><span class="v">janv.</span></div>
+          <div class="select"><span class="v">1</span></div>
+          <div class="select"><span class="v">2019</span></div>
+        </div>
+        <div class="group-label">Date de fin</div>
+        <div class="selects d2">
+          <div class="select"><span class="v">déc.</span></div>
+          <div class="select"><span class="v">31</span></div>
+          <div class="select"><span class="v">2021</span></div>
+        </div>
+        <div class="apply">Appliquer</div>
+      </div>
+      <svg class="cursor cursor-4" viewBox="0 0 24 24"><path d="M4 2l16 9.5-7 1.6L9.4 21z" fill="#fff" stroke="#09090b" stroke-width="1.4" stroke-linejoin="round" /></svg>
+    </section>
+
+    <!-- Scène 5 : aperçu (12,7 à 15,9 s) -->
+    <section class="scene step s5">
+      <div class="text">
+        <div class="eyebrow">Étape 3 · Aperçu</div>
+        <h2>Tu valides<br />chaque like.</h2>
+        <p class="sub">Chaque like ciblé est listé. Décoche ceux que tu veux garder : rien n’est retiré sans toi.</p>
+      </div>
+      <div class="card">
+        <div class="card-head">Aperçu du nettoyage <span class="badge">prêt</span></div>
+        <div class="count"><span class="before">5 likes seront retirés sur 5</span><span class="after">4 likes seront retirés sur 5</span></div>
+        <div class="rows">
+          <div class="row"><span class="box"><span class="on">✓</span></span><span class="avatar">CO</span><span class="who"><b>@compte_humour</b><small>Vidéo, partagée le 12/03/2021</small></span></div>
+          <div class="row"><span class="box"><span class="on">✓</span></span><span class="avatar">PA</span><span class="who"><b>@page_memes</b><small>Photo, partagée le 08/11/2020</small></span></div>
+          <div class="row"><span class="box"><span class="on">✓</span></span><span class="avatar">AM</span><span class="who"><b>@ami_proche</b><small>Carrousel, partagée le 24/06/2021</small></span><span class="kept">gardé</span></div>
+          <div class="row"><span class="box"><span class="on">✓</span></span><span class="avatar">CL</span><span class="who"><b>@club_sport</b><small>Vidéo, partagée le 02/01/2021</small></span></div>
+          <div class="row"><span class="box"><span class="on">✓</span></span><span class="avatar">CU</span><span class="who"><b>@cuisine_facile</b><small>Photo, partagée le 17/09/2019</small></span></div>
+        </div>
+        <div class="launch">Lancer le nettoyage</div>
+      </div>
+      <svg class="cursor cursor-5" viewBox="0 0 24 24"><path d="M4 2l16 9.5-7 1.6L9.4 21z" fill="#fff" stroke="#09090b" stroke-width="1.4" stroke-linejoin="round" /></svg>
+    </section>
+
+    <!-- Scène 6 : nettoyage (15,9 à 19 s) -->
+    <section class="scene step s6">
+      <div class="text">
+        <div class="eyebrow">Étape 4 · Nettoyage</div>
+        <h2>Par lots, en<br />toute prudence.</h2>
+        <div class="chips">
+          <span class="chip">Pauses aléatoires</span>
+          <span class="chip">Limite par jour</span>
+          <span class="chip">Arrêt au moindre signal</span>
+          <span class="chip">Reprise sans rien retraiter</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="live">Nettoyage en cours</span><span class="pct" id="pct">0 %</span></div>
+        <div class="progress"><div class="fill"></div></div>
+        <div class="stats">
+          <div class="stat"><small>Retirés</small><b id="removed">0</b></div>
+          <div class="stat"><small>Échecs</small><b>0</b></div>
+          <div class="stat"><small>Gardés</small><b>1</b></div>
+        </div>
+        <div class="log">
+          <div class="l1"><time>14:02:11</time>Lot retiré : 20 likes</div>
+          <div class="l2"><time>14:02:14</time>Pause entre deux lots, comme prévu</div>
+          <div class="l3"><time>14:02:31</time>Lot retiré : 20 likes, contrôlé au rechargement</div>
+        </div>
+        <div class="done"><span class="badge ok">Rapport prêt : bilan et export CSV</span></div>
+      </div>
+    </section>
+
+    <!-- Scène 7 : conclusion (18,8 à 20 s) -->
+    <section class="scene s7">
+      <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
+        <rect class="tile" width="32" height="32" rx="8" fill="#4f46e5" />
+        <path class="heart" d="M16 25s-8-4.8-8-10.4A4.6 4.6 0 0 1 16 12a4.6 4.6 0 0 1 8 2.6C24 20.2 16 25 16 25z" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round" />
+        <path class="strike" d="M8 8l16 17" stroke="#fff" stroke-width="2.2" stroke-linecap="round" />
+      </svg>
+      <h3>IUC</h3>
+      <p class="promise">100 % local · Sans mot de passe · Open source</p>
+      <div class="ctas">
+        <span class="cta primary">Essayer la démo</span>
+        <span class="cta">Télécharger pour Windows</span>
+      </div>
+      <p class="url">gomugomuno01.github.io/Instagram-Unlike-Cleaner</p>
+    </section>
+
+    <script>
+      const DURATION = 20000
+
+      // Cœurs qui montent pendant l'introduction.
+      const hearts = document.getElementById('hearts')
+      const heartSvg =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20s-7-4.2-7-9.1A4 4 0 0 1 12 8.6 4 4 0 0 1 19 10.9C19 15.8 12 20 12 20z"/></svg>'
+      ;[
+        [180, 0, 1.2], [420, 350, 0.8], [700, 150, 1], [1180, 500, 0.9],
+        [1460, 100, 1.3], [1720, 420, 0.8], [960, 800, 1.1], [300, 900, 0.9],
+      ].forEach(([left, delay, scale]) => {
+        const heart = document.createElement('div')
+        heart.className = 'heart-float'
+        heart.style.left = `${left}px`
+        heart.style.animationDelay = `${delay}ms`
+        heart.style.width = heart.style.height = `${64 * scale}px`
+        heart.innerHTML = heartSvg
+        hearts.append(heart)
+      })
+
+      const easeOut = (x) => 1 - Math.pow(1 - Math.min(Math.max(x, 0), 1), 3)
+      const easeInOut = (x) => {
+        const v = Math.min(Math.max(x, 0), 1)
+        return v < 0.5 ? 4 * v * v * v : 1 - Math.pow(-2 * v + 2, 3) / 2
+      }
+      const fr = (n) => n.toLocaleString('fr-FR')
+
+      // Textes qui suivent le temps : compteur, pourcentage, likes retirés.
+      function dynamic(t) {
+        document.getElementById('counter').textContent = fr(Math.round(easeOut((t - 3400) / 1400) * 1493))
+        const progress = easeInOut((t - 16300) / 1900)
+        document.getElementById('pct').textContent = `${Math.round(progress * 100)} %`
+        document.getElementById('removed').textContent = fr(Math.round(progress * 1492))
+      }
+
+      // Fige toute la scène à l'instant t (ms) : utilisé pour la capture image par image.
+      window.seek = (t) => {
+        for (const animation of document.getAnimations()) {
+          animation.pause()
+          animation.currentTime = t
+        }
+        dynamic(t)
+      }
+      window.DURATION = DURATION
+
+      window.seek(0)
+      if (new URLSearchParams(location.search).has('play')) {
+        const start = performance.now()
+        const tick = (now) => {
+          window.seek((now - start) % DURATION)
+          requestAnimationFrame(tick)
+        }
+        requestAnimationFrame(tick)
+      }
+    </script>
+  </body>
+</html>

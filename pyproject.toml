@@ -35,6 +35,10 @@ package = [
     "pystray>=0.19,<1",
     "pillow>=11,<13",
 ]
+# Vidéo de présentation (scripts/render_presentation.py) : ffmpeg fourni par imageio-ffmpeg.
+video = [
+    "imageio-ffmpeg>=0.5,<1",
+]
 
 [project.scripts]
 iuc = "app.cli:app"
@@ -66,6 +70,6 @@ mypy_path = "backend"
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-# Icône de l'application Windows (extra « package ») : sans annotations de types.
-module = ["pystray", "PIL", "PIL.*"]
+# Application Windows (extra « package ») et vidéo (extra « video ») : sans annotations de types.
+module = ["pystray", "PIL", "PIL.*", "imageio_ffmpeg"]
 ignore_missing_imports = true

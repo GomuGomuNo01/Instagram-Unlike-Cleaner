@@ -9,7 +9,7 @@ import { NotFoundPage } from './pages/NotFoundPage'
 // Le routeur attend l'écran avant de l'afficher, ce qui garde la transition fluide ; une
 // fine barre signale l'attente si la connexion est lente.
 
-/** Parcours : accueil, avertissement, connexion, critères, aperçu, suivi, rapport. */
+/** Parcours : accueil, présentation, avertissement, connexion, critères, aperçu, suivi, rapport. */
 export const routes: RouteObject[] = [
   {
     path: '/',
@@ -17,6 +17,12 @@ export const routes: RouteObject[] = [
     HydrateFallback: AppFallback,
     children: [
       { index: true, element: <HomePage /> },
+      {
+        path: 'presentation',
+        lazy: async () => ({
+          Component: (await import('./pages/PresentationPage')).PresentationPage,
+        }),
+      },
       {
         path: 'commencer',
         lazy: async () => ({ Component: (await import('./pages/ConsentPage')).ConsentPage }),

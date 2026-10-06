@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router'
 
 import { useScrollLock, useScrolled, useSectionSpy } from '../lib/motion'
 import { ArrowRightIcon, CloseIcon, DownloadIcon, MenuIcon } from './icons'
-import { jobsLink, sectionIds, sections, WINDOWS_DOWNLOAD } from './navigation'
+import { jobsLink, presentationLink, sectionIds, sections, WINDOWS_DOWNLOAD } from './navigation'
 import { ThemeToggle } from './ThemeToggle'
 import { AppLink, ButtonLink } from './ui'
 
@@ -27,7 +27,11 @@ export function Logo() {
   )
 }
 
-const mobileItems = [...sections.map((s) => ({ to: `/#${s.id}`, label: s.label })), jobsLink]
+const mobileItems = [
+  presentationLink,
+  ...sections.map((s) => ({ to: `/#${s.id}`, label: s.label })),
+  jobsLink,
+]
 
 // Démo en ligne : téléchargement de la vraie version, mis en avant dans la navigation.
 const DEMO = import.meta.env.VITE_DEMO === 'true'
@@ -82,8 +86,11 @@ export function Header() {
           <Logo />
           <nav
             aria-label="Navigation principale"
-            className="ml-8 hidden items-center gap-1 lg:flex"
+            className="ml-6 hidden items-center gap-1 lg:flex xl:ml-8"
           >
+            <NavLink to={presentationLink.to} viewTransition className="nav-link whitespace-nowrap">
+              {presentationLink.label}
+            </NavLink>
             {sections.map((section) => (
               <AppLink
                 key={section.id}
@@ -99,11 +106,11 @@ export function Header() {
                 href={WINDOWS_DOWNLOAD}
                 download
                 aria-label={DOWNLOAD_LABEL}
-                className="ml-3 inline-flex min-h-9 shrink-0 items-center gap-2 rounded-full border border-primary bg-primary-soft px-4 text-small font-semibold whitespace-nowrap text-primary-strong transition-colors hover:bg-primary-soft-hover"
+                title={DOWNLOAD_LABEL}
+                className="ml-2 inline-flex min-h-9 shrink-0 items-center gap-2 rounded-full border border-primary bg-primary-soft px-3 text-small font-semibold whitespace-nowrap text-primary-strong transition-colors hover:bg-primary-soft-hover xl:ml-3 xl:px-4"
               >
                 <DownloadIcon className="h-4 w-4" />
-                {/* Libellé court sur les écrans moyens, pour tenir sur une ligne. */}
-                <span className="xl:hidden">Télécharger</span>
+                {/* Icône seule sur les écrans moyens, pour que la barre tienne sur une ligne. */}
                 <span className="hidden xl:inline">{DOWNLOAD_LABEL}</span>
               </a>
             )}

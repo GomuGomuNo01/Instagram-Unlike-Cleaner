@@ -1,6 +1,6 @@
 import { Logo } from './Header'
 import { ArrowUpIcon } from './icons'
-import { jobsLink, REPOSITORY, sections } from './navigation'
+import { jobsLink, presentationLink, REPOSITORY, sections } from './navigation'
 import { AppLink } from './ui'
 
 const linkClass =
@@ -21,6 +21,11 @@ export function Footer() {
           <div>
             <h2 className="text-small font-semibold text-fg">Découvrir</h2>
             <ul className="mt-3">
+              <li>
+                <AppLink to={presentationLink.to} className={linkClass}>
+                  {presentationLink.label}
+                </AppLink>
+              </li>
               {sections.map((section) => (
                 <li key={section.id}>
                   <AppLink to={`/#${section.id}`} className={linkClass}>

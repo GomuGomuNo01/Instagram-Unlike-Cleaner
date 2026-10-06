@@ -8,6 +8,9 @@ export const sections = [
 
 export const sectionIds = sections.map((section) => section.id)
 
+/** Présentation vidéo de l'application, en tête du menu. */
+export const presentationLink = { to: '/presentation', label: 'Présentation' } as const
+
 /** Espace de l'utilisateur : l'historique de ses nettoyages. */
 export const jobsLink = { to: '/nettoyages', label: 'Mes nettoyages' } as const
 
