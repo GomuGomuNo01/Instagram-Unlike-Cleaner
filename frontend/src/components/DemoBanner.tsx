@@ -1,5 +1,5 @@
 import { InfoIcon } from './icons'
-import { REPOSITORY } from './navigation'
+import { WINDOWS_DOWNLOAD } from './navigation'
 
 /** Bandeau de la démo en ligne : l'interface est la vraie, les données sont fictives. */
 export function DemoBanner() {
@@ -10,7 +10,8 @@ export function DemoBanner() {
         <span>
           <strong className="font-semibold">Démo en ligne</strong> : la vraie interface d’IUC, sur
           des likes fictifs et en accéléré. Aucune connexion à Instagram, rien n’est enregistré.{' '}
-          <a className="link" href={`${REPOSITORY}#reproduire-le-projet`}>
+          {/* Téléchargement direct de l'installeur Windows (Release la plus récente). */}
+          <a className="link" href={WINDOWS_DOWNLOAD} download>
             Installer la vraie version
           </a>
         </span>

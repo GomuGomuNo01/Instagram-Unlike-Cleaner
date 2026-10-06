@@ -5,13 +5,13 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-API%20locale-009688?logo=fastapi&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-290%20pass%C3%A9s-1BAF7A)
+![Tests](https://img.shields.io/badge/tests-291%20pass%C3%A9s-1BAF7A)
 [![Version](https://img.shields.io/github/v/release/GomuGomuNo01/Instagram-Unlike-Cleaner?label=version)](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/releases/latest)
 [![CI](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/actions/workflows/ci.yml?query=branch%3Amain)
 
 Projet de bout en bout : un outil **100 % local** qui retire en masse les likes Instagram d’une
 personne, après validation de chaque like ciblé, **sans jamais voir son mot de passe**. Essayé
-sur un vrai compte (**1 493 likes recensés en 14 minutes**) et prouvé par **290 tests
+sur un vrai compte (**1 493 likes recensés en 14 minutes**) et prouvé par **291 tests
 automatisés**.
 
 [![Essayer la démo en ligne](https://img.shields.io/badge/Essayer%20la%20d%C3%A9mo-en%20ligne%2C%20sans%20installation-4F46E5?style=for-the-badge)](https://gomugomuno01.github.io/Instagram-Unlike-Cleaner/)
@@ -268,7 +268,7 @@ Chaque garantie est appliquée dans le code et **prouvée par des tests**
 | Unitaires | Filtre d’Instagram, limites quotidiennes, pauses aléatoires, machine d’états, exports | pytest | 242 tests serveur passés |
 | Intégration | API et base SQLite, reprise après un arrêt | pytest, httpx | inclus ci-dessus |
 | Automatisation | Navigation et retrait sur une fausse page des likes, réseau coupé | Playwright | inclus ci-dessus |
-| Frontend | Composants, écran des critères, parcours principal, démo en ligne, tokens du système de design | Vitest, Testing Library | 48 tests passés |
+| Frontend | Composants, écran des critères, parcours principal, démo en ligne, tokens du système de design | Vitest, Testing Library | 49 tests passés |
 | Application Windows | Démarrage réel d’`IUC.exe` avant chaque publication | GitHub Actions (Windows) | interface servie |
 | Continu | Lint, typage, tests, audits | GitHub Actions | Python 3.11 et 3.14 |
 | Manuel | Un lot réel sur un compte de test | [Recette](docs/recette.md) | 1 493 likes recensés, lots retirés et vérifiés |
@@ -329,8 +329,8 @@ rien retirer de plus, en pause, avec la marche à suivre :
 
 ### Qualité du code
 
-- **290 tests automatisés** : 242 côté serveur (dont l’automatisation sur la fausse page, réseau
-  coupé), 48 côté interface.
+- **291 tests automatisés** : 242 côté serveur (dont l’automatisation sur la fausse page, réseau
+  coupé), 49 côté interface.
 - Lint et **typage strict** des deux côtés (Ruff, mypy, Oxlint, TypeScript) à chaque envoi.
 - **Aucune vulnérabilité connue** dans les dépendances (`pip-audit`, `npm audit`), versions figées.
 - Application Windows **démarrée réellement** par l’intégration continue avant chaque publication.

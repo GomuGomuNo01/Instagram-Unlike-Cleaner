@@ -12,3 +12,6 @@ export const sectionIds = sections.map((section) => section.id)
 export const jobsLink = { to: '/nettoyages', label: 'Mes nettoyages' } as const
 
 export const REPOSITORY = 'https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner'
+
+/** Installeur Windows de la dernière version publiée (nom de fichier stable). */
+export const WINDOWS_DOWNLOAD = `${REPOSITORY}/releases/latest/download/IUC-Setup.exe`
