@@ -42,6 +42,7 @@ packageurl-python==0.17.6
 packaging==26.3
 pathspec==1.1.1
 pefile==2024.8.26
+pillow==12.3.0
 pip-requirements-parser==32.0.1
 pip_api==0.0.35
 pip_audit==2.10.1
@@ -58,6 +59,7 @@ Pygments==2.21.0
 pyinstaller-hooks-contrib==2026.8
 pyinstaller==6.22.3
 pyparsing==3.3.3
+pystray==0.19.5
 pytest==9.1.1
 python-discovery==1.6.1
 python-dotenv==1.2.4
@@ -68,6 +70,7 @@ rich==15.0.0
 ruff==0.16.10
 setuptools==84.0.0
 shellingham==1.5.4
+six==1.17.0
 sortedcontainers==2.4.0
 SQLAlchemy==2.0.54
 sqlmodel==0.0.47

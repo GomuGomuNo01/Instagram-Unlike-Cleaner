@@ -11,8 +11,9 @@ Au premier lancement, Windows peut afficher « Windows a protégé votre ordinat
 n’est pas signé (la signature de code est payante). Clique sur **Informations
 complémentaires**, puis **Exécuter quand même**.
 
-L’interface s’ouvre dans ton navigateur. Garde la fenêtre noire ouverte pendant
-l’utilisation ; la fermer arrête IUC.
+L’interface s’ouvre dans ton navigateur. IUC tourne ensuite en arrière-plan, sans fenêtre :
+son icône, près de l’horloge (flèche ^ si elle est masquée), rouvre l’interface ou quitte IUC.
+Un nettoyage en cours passe alors en pause.
 
 **Prérequis** : Google Chrome ou Microsoft Edge, que IUC pilote dans une fenêtre dédiée.
 

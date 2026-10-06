@@ -94,6 +94,22 @@ def serve(
     settings = get_settings()
     if port is not None:
         settings = settings.model_copy(update={"api_port": port})
+    if not run_server(settings, open_ui=open_ui):
+        typer.echo(
+            f"Le serveur n'a pas démarré : le port {settings.api_port} est-il libre ?", err=True
+        )
+        raise typer.Exit(1)
+
+
+def run_server(
+    settings: Settings,
+    *,
+    open_ui: bool,
+    on_server: Callable[[uvicorn.Server], None] | None = None,
+) -> bool:
+    """Sert l'API et l'interface jusqu'à l'arrêt du serveur. `on_server` reçoit le serveur
+    avant son démarrage (l'application Windows s'en sert pour l'arrêter depuis son icône).
+    Renvoie False si le serveur n'a pas pu démarrer, par exemple sur un port déjà pris."""
     settings.ensure_dirs()
     setup_logging(settings)
     port = settings.api_port
@@ -110,8 +126,10 @@ def serve(
     # Journal d'accès désactivé : il afficherait le jeton passé dans l'URL du flux SSE.
     config = uvicorn.Config(api, host="127.0.0.1", port=port, access_log=False, log_level="warning")
     server = uvicorn.Server(config)
+    if on_server is not None:
+        on_server(server)
 
-    async def run_server() -> None:
+    async def serve_until_stopped() -> None:
         async def open_when_ready() -> None:
             while not server.started:
                 await asyncio.sleep(0.1)
@@ -123,7 +141,8 @@ def serve(
             opener.cancel()
 
     # asyncio.run utilise sous Windows la boucle Proactor, nécessaire à Playwright.
-    asyncio.run(run_server())
+    asyncio.run(serve_until_stopped())
+    return bool(server.started)
 
 
 @app.command()
