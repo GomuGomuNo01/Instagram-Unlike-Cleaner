@@ -33,13 +33,14 @@ it('présente IUC en vidéo, avec un équivalent textuel de chaque scène', asyn
   ])
 })
 
-it('un chapitre place la vidéo sur sa scène et la lance', async () => {
+it('un chapitre place la vidéo sur sa scène et la lance, avec le son', async () => {
   const play = vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue()
   await openPresentation()
 
   await userEvent.click(screen.getByRole('button', { name: /3\. Aperçu/ }))
 
   expect(document.querySelector('video')?.currentTime).toBe(12.6)
+  expect(document.querySelector('video')?.muted).toBe(false) // le clic active la musique
   expect(play).toHaveBeenCalled()
 })
 

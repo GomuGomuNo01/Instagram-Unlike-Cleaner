@@ -44,7 +44,8 @@ Définition de « terminé » :
   la fausse API de `frontend/src/demo/` (vérifier avec `npm run build:demo` puis
   `npm run preview:demo`) ;
 - vidéo de présentation à jour si un écran montré change : modifier
-  `docs/video/presentation.html`, puis `python scripts/render_presentation.py` (extra « video »).
+  `docs/video/presentation.html`, puis `python scripts/render_presentation.py` (extra « video ») ;
+  si les scènes changent de durée, recaler la musique (`scripts/presentation_music.py`).
 
 ## Quand Instagram change son interface
 

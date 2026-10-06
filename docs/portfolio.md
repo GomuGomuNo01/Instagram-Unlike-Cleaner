@@ -96,7 +96,7 @@ CLI Typer ───────────────────────�
 ## Liens
 
 - Démo en ligne, sans installation : https://gomugomuno01.github.io/Instagram-Unlike-Cleaner/
-- Présentation vidéo (20 s) : https://gomugomuno01.github.io/Instagram-Unlike-Cleaner/presentation
+- Présentation vidéo (20 s, musique originale) : https://gomugomuno01.github.io/Instagram-Unlike-Cleaner/presentation
 - Code source : https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner
 - Avertissement : l’automatisation n’est pas autorisée par les conditions d’utilisation
   d’Instagram ; projet indépendant, sans lien avec Instagram ni Meta.

@@ -35,9 +35,11 @@ package = [
     "pystray>=0.19,<1",
     "pillow>=11,<13",
 ]
-# Vidéo de présentation (scripts/render_presentation.py) : ffmpeg fourni par imageio-ffmpeg.
+# Vidéo de présentation (scripts/render_presentation.py) : ffmpeg fourni par imageio-ffmpeg,
+# musique originale synthétisée avec numpy (scripts/presentation_music.py).
 video = [
     "imageio-ffmpeg>=0.5,<1",
+    "numpy>=2.0,<3",
 ]
 
 [project.scripts]

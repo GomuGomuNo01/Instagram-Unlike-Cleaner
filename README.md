@@ -18,7 +18,8 @@ automatisés**.
 [![Télécharger pour Windows](https://img.shields.io/badge/T%C3%A9l%C3%A9charger-Windows%2C%20installeur-0078D4?style=for-the-badge)](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/releases/latest/download/IUC-Setup.exe)
 [![Voir la présentation](https://img.shields.io/badge/Voir%20la%20pr%C3%A9sentation-vid%C3%A9o%20de%2020%20s-7C3AED?style=for-the-badge)](https://gomugomuno01.github.io/Instagram-Unlike-Cleaner/presentation)
 
-*Présentation : l’application et son fonctionnement en 20 secondes de motion design. Démo :
+*Présentation : l’application et son fonctionnement en 20 secondes de motion design, sur une
+musique originale. Démo :
 la vraie interface sur des likes fictifs, sans compte. Windows : installeur, ou
 [version portable](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/releases/latest/download/IUC-portable.zip)
 à lancer sans installation ; Chrome ou Edge requis. Notes de version sur la
@@ -189,7 +190,7 @@ un test échoue si un module réseau apparaît dans son code.
 | **GitHub Actions** | Intégration continue et publication | Python 3.11 et 3.14, audits des dépendances, démo et application publiées automatiquement |
 | **GitHub Pages** | Démo en ligne | Gratuit, et aucun serveur du projet ne voit les données des utilisateurs |
 | **PyInstaller, Inno Setup, pystray** | Application Windows | Installeur ou version portable ; IUC tourne sans fenêtre, piloté depuis la zone de notification |
-| **Playwright, ffmpeg** | Vidéo de présentation | Animation CSS figée et capturée image par image, puis encodée en H.264 : régénérable à chaque évolution des écrans |
+| **Playwright, ffmpeg, numpy** | Vidéo de présentation | Animation CSS figée et capturée image par image, encodée en H.264 ; musique originale synthétisée note par note, calée sur les scènes |
 
 ## 7. Méthodologie
 
@@ -295,9 +296,11 @@ de passe et les sessions Instagram des utilisateurs.
 
 [![Présentation vidéo d’IUC, 20 secondes](frontend/public/presentation-poster.jpg)](https://gomugomuno01.github.io/Instagram-Unlike-Cleaner/presentation)
 
-*La présentation vidéo (20 s, 1080p) : cliquer pour la regarder dans l’onglet « Présentation »
-de la démo. Elle est rendue image par image à partir d’une animation du dépôt
-([`docs/video/presentation.html`](docs/video/presentation.html)), avec les écrans d’IUC.*
+*La présentation vidéo (20 s, 1080p, en musique) : cliquer pour la regarder dans l’onglet
+« Présentation » de la démo. Elle est rendue image par image à partir d’une animation du dépôt
+([`docs/video/presentation.html`](docs/video/presentation.html)), avec les écrans d’IUC ; sa
+musique est composée et synthétisée pour elle ([`presentation_music.py`](scripts/presentation_music.py)),
+calée sur chaque changement de scène, sans aucun droit à céder.*
 
 | Écran | Contenu |
 |---|---|
@@ -393,7 +396,8 @@ Instagram-Unlike-Cleaner/
 │   └── tests/                Tests, dont la fausse version d’Instagram
 ├── frontend/                 Interface React (Vite, TypeScript, Tailwind)
 │   └── src/demo/             Fausse API de la démo en ligne (likes fictifs, dans le navigateur)
-├── scripts/                  demo.py (démonstration locale), render_presentation.py (vidéo)
+├── scripts/                  demo.py (démonstration locale), render_presentation.py et
+│                             presentation_music.py (vidéo et musique)
 ├── docs/                     Recette manuelle, page portfolio, images, animation de la vidéo
 ├── packaging/                Application Windows (PyInstaller, Inno Setup)
 ├── constraints.txt           Versions figées des dépendances Python
@@ -432,7 +436,8 @@ iuc serve                       # interface sur http://127.0.0.1:8765, Ctrl+C po
 Sans compte Instagram : `python scripts/demo.py` sert l’interface sur `http://127.0.0.1:8799`
 avec trois nettoyages fictifs ; `npm run build:demo` compile la démo en ligne. La vidéo de
 présentation se régénère avec `pip install -e ".[video]" -c constraints.txt`, puis
-`python scripts/render_presentation.py` (environ 4 minutes en 1080p).
+`python scripts/render_presentation.py` (environ 4 minutes en 1080p) ; `--music-only` ne
+remplace que la musique.
 
 <details>
 <summary><b>Commandes de la CLI</b></summary>

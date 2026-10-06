@@ -10,7 +10,7 @@ const VIDEO = `${import.meta.env.BASE_URL}presentation.mp4`
 const POSTER = `${import.meta.env.BASE_URL}presentation-poster.jpg`
 const DEMO = import.meta.env.VITE_DEMO === 'true'
 
-/** Chapitres de la vidéo (muette) : repères cliquables et équivalent textuel de chaque scène.
+/** Chapitres de la vidéo : repères cliquables et équivalent textuel de chaque scène.
  * Les instants suivent l'animation source, docs/video/presentation.html. */
 const chapters = [
   {
@@ -63,6 +63,7 @@ export function PresentationPage() {
     const player = video.current
     if (!player) return
     player.currentTime = seconds
+    player.muted = false // un clic autorise le son, coupé pour la lecture automatique
     void player.play().catch(() => {
       // Lecture refusée par le navigateur : la vidéo reste positionnée sur le chapitre.
     })
@@ -73,7 +74,7 @@ export function PresentationPage() {
       <PageHeader
         eyebrow="Présentation"
         title="IUC en 20 secondes"
-        description="L’application et son fonctionnement, de la connexion au rapport : une présentation animée, sans son."
+        description="L’application et son fonctionnement, de la connexion au rapport, en musique. La lecture démarre sans le son : active-le dans le lecteur, ou choisis un chapitre."
       />
       <Card padding="none" className="overflow-hidden">
         <video
@@ -81,6 +82,7 @@ export function PresentationPage() {
           src={VIDEO}
           poster={POSTER}
           controls
+          // Son coupé : condition des navigateurs pour lancer la lecture automatiquement.
           muted
           playsInline
           preload="metadata"
@@ -138,7 +140,7 @@ export function PresentationPage() {
           </ButtonLink>
         )}
         <a href={VIDEO} download className="link text-small sm:ml-auto">
-          Télécharger la vidéo (MP4, 3,4 Mo)
+          Télécharger la vidéo (MP4, 3,8 Mo)
         </a>
       </div>
     </AppPage>

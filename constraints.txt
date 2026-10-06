@@ -38,6 +38,7 @@ msgpack==1.2.3
 mypy==2.4.0
 mypy_extensions==1.1.0
 nodeenv==1.11.0
+numpy==2.5.3
 opentelemetry-api==1.45.0
 packageurl-python==0.17.6
 packaging==26.3
