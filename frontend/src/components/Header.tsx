@@ -2,8 +2,8 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { NavLink, useLocation } from 'react-router'
 
 import { useScrollLock, useScrolled, useSectionSpy } from '../lib/motion'
-import { ArrowRightIcon, CloseIcon, MenuIcon } from './icons'
-import { jobsLink, sectionIds, sections } from './navigation'
+import { ArrowRightIcon, CloseIcon, DownloadIcon, MenuIcon } from './icons'
+import { jobsLink, sectionIds, sections, WINDOWS_DOWNLOAD } from './navigation'
 import { ThemeToggle } from './ThemeToggle'
 import { AppLink, ButtonLink } from './ui'
 
@@ -28,6 +28,10 @@ export function Logo() {
 }
 
 const mobileItems = [...sections.map((s) => ({ to: `/#${s.id}`, label: s.label })), jobsLink]
+
+// Démo en ligne : téléchargement de la vraie version, mis en avant dans la navigation.
+const DEMO = import.meta.env.VITE_DEMO === 'true'
+const DOWNLOAD_LABEL = 'Télécharger pour Windows'
 
 /** En-tête : logo, menu limité aux sections utiles, thème et action principale. Intégré à
  * la page en haut, il prend un fond translucide dès que la page défile. Sur mobile, un menu
@@ -90,9 +94,26 @@ export function Header() {
                 {section.label}
               </AppLink>
             ))}
+            {DEMO && (
+              <a
+                href={WINDOWS_DOWNLOAD}
+                download
+                aria-label={DOWNLOAD_LABEL}
+                className="ml-3 inline-flex min-h-9 shrink-0 items-center gap-2 rounded-full border border-primary bg-primary-soft px-4 text-small font-semibold whitespace-nowrap text-primary-strong transition-colors hover:bg-primary-soft-hover"
+              >
+                <DownloadIcon className="h-4 w-4" />
+                {/* Libellé court sur les écrans moyens, pour tenir sur une ligne. */}
+                <span className="xl:hidden">Télécharger</span>
+                <span className="hidden xl:inline">{DOWNLOAD_LABEL}</span>
+              </a>
+            )}
           </nav>
           <div className="ml-auto flex items-center gap-2">
-            <NavLink to={jobsLink.to} viewTransition className="nav-link hidden lg:inline-flex">
+            <NavLink
+              to={jobsLink.to}
+              viewTransition
+              className="nav-link hidden whitespace-nowrap lg:inline-flex"
+            >
               {jobsLink.label}
             </NavLink>
             <ThemeToggle />
@@ -148,6 +169,17 @@ export function Header() {
           <ButtonLink to="/commencer" onClick={close} size="lg" className="w-full">
             Commencer le nettoyage
           </ButtonLink>
+          {DEMO && (
+            <a
+              href={WINDOWS_DOWNLOAD}
+              download
+              onClick={close}
+              className="btn btn-secondary btn-lg mt-3 w-full"
+            >
+              <DownloadIcon className="h-5 w-5" />
+              {DOWNLOAD_LABEL}
+            </a>
+          )}
         </div>
       </nav>
     </>

@@ -11,7 +11,7 @@ les retirer qu’à la main, et les outils existants demandent souvent le mot de
 les données à un tiers. IUC cible les likes avec le filtre d’Instagram (tri, dates du like),
 liste chaque like pour validation, puis les retire par lots avec pauses et limite quotidienne,
 sans jamais voir le mot de passe ni rien envoyer hors de l’ordinateur. Sur un vrai compte,
-1 493 likes ont été recensés en 14 minutes et chaque lot retiré est contrôlé ; 283 tests
+1 493 likes ont été recensés en 14 minutes et chaque lot retiré est contrôlé ; 285 tests
 automatisés prouvent qu’aucun identifiant n’est lu ni conservé.
 
 Technologies : Python, Playwright, FastAPI, SQLite, React, TypeScript, Tailwind CSS, GitHub
@@ -41,7 +41,7 @@ tiers : on échange un problème de confidentialité contre un autre.
 
 - Essais sur un vrai compte : 1 493 likes recensés en 14 minutes, puis des lots retirés et
   vérifiés un à un au rechargement de la page.
-- 283 tests automatisés (235 côté serveur, 48 côté interface), relancés à chaque envoi par
+- 285 tests automatisés (235 côté serveur, 50 côté interface), relancés à chaque envoi par
   l’intégration continue ; ils prouvent notamment qu’aucun identifiant tapé n’est lu ni écrit sur
   le disque, et que le nettoyage s’arrête sur déconnexion, vérification ou message de limite.
 - Aucune vulnérabilité connue dans les dépendances (audits pip-audit et npm audit).
