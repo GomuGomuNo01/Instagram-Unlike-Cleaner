@@ -4,7 +4,9 @@
 # Journal : /tmp/iuc-serve.log.
 set -euo pipefail
 
-if curl --silent --output /dev/null http://127.0.0.1:8765/; then
+# Test sur le processus lui-même : au démarrage, le relais de ports de Codespaces peut
+# répondre sur 8765 avant qu'IUC ne soit lancé.
+if pgrep -f "[b]in/iuc serve" >/dev/null; then
   exit 0 # déjà lancé
 fi
 
