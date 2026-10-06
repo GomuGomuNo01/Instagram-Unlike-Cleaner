@@ -1,6 +1,6 @@
 import { Logo } from './Header'
 import { ArrowUpIcon } from './icons'
-import { jobsLink, presentationLink, REPOSITORY, sections } from './navigation'
+import { GITHUB_PROFILE, jobsLink, presentationLink, sections } from './navigation'
 import { AppLink } from './ui'
 
 const linkClass =
@@ -54,8 +54,8 @@ export function Footer() {
             <h2 className="text-small font-semibold text-fg">Contact et légal</h2>
             <ul className="mt-3">
               <li>
-                <a href={REPOSITORY} target="_blank" rel="noreferrer" className={linkClass}>
-                  Code source et contact (GitHub)
+                <a href={GITHUB_PROFILE} target="_blank" rel="noreferrer" className={linkClass}>
+                  Contact GitHub
                 </a>
               </li>
               <li className="py-1 text-small text-fg-muted">Données 100 % locales</li>

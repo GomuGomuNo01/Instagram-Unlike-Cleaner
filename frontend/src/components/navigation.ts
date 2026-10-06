@@ -14,6 +14,9 @@ export const presentationLink = { to: '/presentation', label: 'Présentation' } 
 /** Espace de l'utilisateur : l'historique de ses nettoyages. */
 export const jobsLink = { to: '/nettoyages', label: 'Mes nettoyages' } as const
 
+/** Profil GitHub de l'auteur, pour le contact. */
+export const GITHUB_PROFILE = 'https://github.com/GomuGomuNo01'
+
 export const REPOSITORY = 'https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner'
 
 /** Installeur Windows de la dernière version publiée (nom de fichier stable). */
