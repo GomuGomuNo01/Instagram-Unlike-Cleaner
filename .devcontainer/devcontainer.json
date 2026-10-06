@@ -4,7 +4,7 @@
   // bureau distant (port 6080) ; l'interface d'IUC est sur le port 8765. Les deux ports
   // restent privés : seul le propriétaire du Codespace y a accès.
   "name": "IUC (vraie version)",
-  "image": "mcr.microsoft.com/devcontainers/python:1-3.12-bookworm",
+  "build": { "dockerfile": "Dockerfile" },
   "features": {
     "ghcr.io/devcontainers/features/node:1": { "version": "22" },
     "ghcr.io/devcontainers/features/desktop-lite:1": { "password": "noPassword" }
