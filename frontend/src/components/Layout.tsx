@@ -6,6 +6,7 @@ import { DemoBanner } from './DemoBanner'
 import { Footer } from './Footer'
 import { Header } from './Header'
 import { Loading, ToastProvider } from './ui'
+import { UpdateBanner } from './UpdateBanner'
 
 export function Layout() {
   const { pathname, hash } = useLocation()
@@ -45,7 +46,7 @@ export function Layout() {
         <RouteProgress />
         <Header />
         <main id="contenu" ref={mainRef} tabIndex={-1} className="flex-1 pt-16 outline-none">
-          {import.meta.env.VITE_DEMO === 'true' && <DemoBanner />}
+          {import.meta.env.VITE_DEMO === 'true' ? <DemoBanner /> : <UpdateBanner />}
           <Outlet />
         </main>
         <Footer />

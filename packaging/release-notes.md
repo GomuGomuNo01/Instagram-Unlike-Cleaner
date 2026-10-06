@@ -15,6 +15,11 @@ L’interface s’ouvre dans ton navigateur. IUC tourne ensuite en arrière-plan
 son icône, près de l’horloge (flèche ^ si elle est masquée), rouvre l’interface ou quitte IUC.
 Un nettoyage en cours passe alors en pause.
 
+**Mises à jour** : quand une nouvelle version sort, un bandeau la signale dans IUC.
+« Mettre à jour » télécharge l’installeur, vérifie son empreinte, l’installe et relance IUC,
+données comprises. Depuis la 1.3.0 ou une version plus ancienne, installe une fois celle-ci à
+la main ; les suivantes s’installeront d’un clic.
+
 **Prérequis** : Google Chrome ou Microsoft Edge, que IUC pilote dans une fenêtre dédiée.
 
 **Tes données** restent sur ton ordinateur, dans `%LOCALAPPDATA%\IUC`, quel que soit le

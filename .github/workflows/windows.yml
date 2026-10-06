@@ -76,6 +76,39 @@ jobs:
         run: |
           choco install innosetup --yes --no-progress
           & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" packaging\iuc.iss
+      - name: Contrôle de la mise à jour
+        shell: pwsh
+        run: |
+          # Comme depuis IUC : installeur silencieux avec /UPDATE=1, lancé pendant qu'IUC tourne.
+          # Il doit attendre la fermeture d'IUC, remplacer l'application, puis la relancer.
+          $setup = (Resolve-Path build\installer\IUC-Setup.exe).Path
+          $exe = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) "Programs\IUC\IUC.exe"
+          function Test-Interface {
+            foreach ($i in 1..30) {
+              Start-Sleep -Seconds 2
+              try {
+                $page = Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8765/ -TimeoutSec 5
+                if ($page.Content -match 'name="iuc-token"') { return $true }
+              } catch {}
+            }
+            return $false
+          }
+          Start-Process $setup -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" -Wait
+          if (-not (Test-Path $exe)) { throw "L'installation silencieuse n'a pas installé IUC." }
+          $running = Start-Process $exe -PassThru
+          if (-not (Test-Interface)) { throw "IUC installé ne sert pas son interface." }
+
+          $update = Start-Process $setup -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/UPDATE=1" -PassThru
+          $null = $update.Handle # garde le code de sortie lisible
+          Start-Sleep -Seconds 5
+          if ($update.HasExited) { throw "L'installeur n'a pas attendu la fermeture d'IUC." }
+          Stop-Process -Id $running.Id -Force
+          if (-not $update.WaitForExit(180000)) { throw "L'installeur ne s'est pas terminé." }
+          if ($update.ExitCode -ne 0) { throw "Installeur en échec (code $($update.ExitCode))." }
+          $relaunched = Test-Interface
+          Get-Process IUC -ErrorAction SilentlyContinue | Stop-Process -Force
+          if (-not $relaunched) { throw "IUC n'a pas été relancé après la mise à jour." }
+          "Mise à jour silencieuse : attente de la fermeture d'IUC, installation, relance."
       - name: Version portable (zip)
         shell: pwsh
         run: |

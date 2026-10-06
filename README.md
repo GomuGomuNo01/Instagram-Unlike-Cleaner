@@ -5,13 +5,13 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-API%20locale-009688?logo=fastapi&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-289%20pass%C3%A9s-1BAF7A)
+![Tests](https://img.shields.io/badge/tests-313%20pass%C3%A9s-1BAF7A)
 [![Version](https://img.shields.io/github/v/release/GomuGomuNo01/Instagram-Unlike-Cleaner?label=version)](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/releases/latest)
 [![CI](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/actions/workflows/ci.yml?query=branch%3Amain)
 
 Projet de bout en bout : un outil **100 % local** qui retire en masse les likes Instagram d’une
 personne, après validation de chaque like ciblé, **sans jamais voir son mot de passe**. Essayé
-sur un vrai compte (**1 493 likes recensés en 14 minutes**) et prouvé par **289 tests
+sur un vrai compte (**1 493 likes recensés en 14 minutes**) et prouvé par **313 tests
 automatisés**.
 
 [![Essayer la démo en ligne](https://img.shields.io/badge/Essayer%20la%20d%C3%A9mo-en%20ligne%2C%20sans%20installation-4F46E5?style=for-the-badge)](https://gomugomuno01.github.io/Instagram-Unlike-Cleaner/)
@@ -173,8 +173,9 @@ cahiers des charges, présentation et développeur, conservés hors du dépôt p
 | Effacement | « Supprimer mes données locales » ou `iuc purge` |
 | Démo et captures | Uniquement des comptes fictifs ; aucun compte réellement aimé dans le dépôt public, vérifié par un test |
 
-Le backend n’ouvre aucune connexion réseau lui-même : seul le navigateur parle à Instagram, et
-un test échoue si un module réseau apparaît dans son code.
+Seul le navigateur parle à Instagram. Le backend n’ouvre qu’une connexion : la recherche de
+mises à jour de l’application Windows, en lecture sur les Releases GitHub du projet, sans rien
+envoyer. Un test échoue si un module réseau apparaît ailleurs dans son code.
 
 ## 6. Outils et technologies
 
@@ -229,7 +230,8 @@ flowchart LR
 ```
 
 Un seul navigateur, piloté par Playwright, parle à Instagram ; l’API et la CLI passent par les
-mêmes services.
+mêmes services. L’application Windows lit en plus la dernière version publiée sur GitHub
+([`update.py`](backend/app/services/update.py)).
 
 ### 8.2 Fonctionnement d’un nettoyage
 
@@ -253,7 +255,8 @@ Chaque garantie est appliquée dans le code et **prouvée par des tests**
 | Sujet | Garantie | Preuve |
 |---|---|---|
 | Identifiants | Aucun champ de connexion lu ni rempli ; aucun mot de passe en mémoire, en base ou dans les journaux. Le navigateur n’enregistre aucun identifiant ; les diagnostics masquent toute saisie | Analyse du code, identifiants « témoins » cherchés dans tout `DATA_DIR` |
-| Données locales | Tout dans `DATA_DIR` ; aucun appel réseau du backend ; CSP de l’interface limitée à l’API locale | Analyse des imports réseau, en-tête CSP, chemins de stockage |
+| Données locales | Tout dans `DATA_DIR` ; aucun appel réseau du backend hors mise à jour ; CSP de l’interface limitée à l’API locale | Analyse des imports réseau, en-tête CSP, chemins de stockage |
+| Mise à jour | Lecture anonyme des Releases du dépôt, rien n’est envoyé ; installeur refusé si sa taille ou son empreinte SHA-256 diffère de celle publiée ; `UPDATE_CHECK=false` la coupe | Fausse version de GitHub : installeur altéré, adresse étrangère, requêtes en lecture seule ([`test_update.py`](backend/tests/test_update.py)) |
 | Suppression | `iuc logout`, `iuc purge` et le bouton « Supprimer mes données locales » | Tests de la CLI, de l’API et du service |
 | Cadence | Délais aléatoires, plafond quotidien configurable | Tirages et bornes vérifiés |
 | Alertes Instagram | Limite, vérification, déconnexion : arrêt immédiat, en pause, marche à suivre | Fausse page qui déconnecte, vérifie ou limite en plein nettoyage |
@@ -268,10 +271,10 @@ Chaque garantie est appliquée dans le code et **prouvée par des tests**
 
 | Niveau | Cible | Outil | Résultat |
 |---|---|---|---|
-| Unitaires | Filtre d’Instagram, limites quotidiennes, pauses aléatoires, machine d’états, exports | pytest | 235 tests serveur passés |
+| Unitaires | Filtre d’Instagram, limites quotidiennes, pauses aléatoires, machine d’états, exports | pytest | 254 tests serveur passés |
 | Intégration | API et base SQLite, reprise après un arrêt | pytest, httpx | inclus ci-dessus |
 | Automatisation | Navigation et retrait sur une fausse page des likes, réseau coupé | Playwright | inclus ci-dessus |
-| Frontend | Composants, écran des critères, parcours principal, démo en ligne, présentation, tokens du système de design | Vitest, Testing Library | 54 tests passés |
+| Frontend | Composants, écran des critères, parcours principal, démo en ligne, présentation, tokens du système de design | Vitest, Testing Library | 59 tests passés |
 | Application Windows | Démarrage réel d’`IUC.exe` avant chaque publication | GitHub Actions (Windows) | interface servie |
 | Continu | Lint, typage, tests, audits | GitHub Actions | Python 3.11 et 3.14 |
 | Manuel | Un lot réel sur un compte de test | [Recette](docs/recette.md) | 1 493 likes recensés, lots retirés et vérifiés |
@@ -284,7 +287,7 @@ diagnostics réels : paquets de 18 vignettes, mode sélection, fenêtre de confi
 | Mode | Pour qui | Fonctionnement |
 |---|---|---|
 | [Démo en ligne](https://gomugomuno01.github.io/Instagram-Unlike-Cleaner/) | Visiteurs, recruteurs | La vraie interface, branchée sur une fausse API qui tourne dans le navigateur ([`frontend/src/demo`](frontend/src/demo)), sur des likes fictifs. Compilée à part : la vraie version n’en contient aucune ligne |
-| [Application Windows](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/releases/latest) | Utilisateurs | Installeur ou version portable ([`packaging/`](packaging)), données dans `%LOCALAPPDATA%\IUC`, Chrome ou Edge déjà installés ; sans fenêtre, icône près de l’horloge |
+| [Application Windows](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/releases/latest) | Utilisateurs | Installeur ou version portable ([`packaging/`](packaging)), données dans `%LOCALAPPDATA%\IUC`, Chrome ou Edge déjà installés ; sans fenêtre, icône près de l’horloge ; mise à jour en un clic depuis l’interface |
 
 Aucun mode ne fait passer de données par un serveur du projet : un tel serveur verrait les mots
 de passe et les sessions Instagram des utilisateurs.
@@ -339,8 +342,8 @@ rien retirer de plus, en pause, avec la marche à suivre :
 
 ### Qualité du code
 
-- **289 tests automatisés** : 235 côté serveur (dont l’automatisation sur la fausse page, réseau
-  coupé), 54 côté interface.
+- **313 tests automatisés** : 254 côté serveur (dont l’automatisation sur la fausse page, réseau
+  coupé), 59 côté interface.
 - Lint et **typage strict** des deux côtés (Ruff, mypy, Oxlint, TypeScript) à chaque envoi.
 - **Aucune vulnérabilité connue** dans les dépendances (`pip-audit`, `npm audit`), versions figées.
 - Application Windows **démarrée réellement** par l’intégration continue avant chaque publication.
@@ -416,6 +419,9 @@ Instagram-Unlike-Cleaner/
    est payante) : « Informations complémentaires », puis « Exécuter quand même ».
 3. L’interface s’ouvre dans le navigateur. IUC tourne ensuite sans fenêtre : son icône, près de
    l’horloge, rouvre l’interface ou quitte IUC (un nettoyage en cours passe alors en pause).
+4. Quand une nouvelle version sort, un bandeau la signale : « Mettre à jour » la télécharge, la
+   vérifie, l’installe et relance IUC (version portable : lien vers la nouvelle archive).
+   Depuis la 1.2.0 ou la 1.3.0, installer une fois la nouvelle version à la main.
 
 Prérequis : Google Chrome ou Microsoft Edge. Données dans `%LOCALAPPDATA%\IUC`, gardées à la
 désinstallation.
@@ -469,6 +475,7 @@ remplace que la musique.
 | `API_PORT` | `8765` | Port de l’API locale (toujours sur 127.0.0.1) |
 | `API_DOCS` | `false` | Page `/docs` de l’API, chargée depuis un CDN : à n’activer qu’en développement |
 | `BROWSER_CHANNELS` | `["chromium"]` | Navigateurs essayés dans l’ordre : `chromium` (celui de Playwright), `chrome`, `msedge` ; `["chrome", "msedge"]` dans l’application Windows |
+| `UPDATE_CHECK` | `false` | Recherche des nouvelles versions sur GitHub (lecture seule, au plus toutes les 6 h) ; `true` dans l’application Windows |
 
 </details>
 

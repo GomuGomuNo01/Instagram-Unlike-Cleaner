@@ -19,6 +19,7 @@ ENV_VARS = (
     "BATCH_SIZE",
     "LOG_LEVEL",
     "API_DOCS",
+    "UPDATE_CHECK",
 )
 
 

@@ -2,7 +2,8 @@
 
 L'API n'écoute que sur 127.0.0.1 et n'accepte que les hôtes 127.0.0.1 et localhost. Seul
 le navigateur piloté par Playwright contacte Instagram ; l'API et la CLI passent par les
-mêmes services.
+mêmes services. Seule autre connexion : la recherche de mises à jour de l'application
+Windows, en lecture sur GitHub (app/services/update.py).
 """
 
 from collections.abc import AsyncIterator
@@ -15,13 +16,14 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 
 from app import __version__
-from app.api import jobs, session
+from app.api import jobs, session, update
 from app.api.security import TOKEN_HEADER, SecurityHeadersMiddleware, new_token
 from app.api.state import ApiConflict, ApiState, BrowserFactory, BrowserManager
 from app.browser.session import BrowserSession
 from app.core.config import Settings, get_settings
 from app.core.db import init_db, make_engine
 from app.frontend import mount_frontend
+from app.services.update import Updater, detect_mode
 
 ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
 
@@ -31,9 +33,10 @@ def create_app(
     *,
     token: str | None = None,
     browser_factory: BrowserFactory | None = None,
+    updater: Updater | None = None,
 ) -> FastAPI:
     """Construit l'application. `browser_factory` permet aux tests de fournir un navigateur
-    branché sur une fausse version d'Instagram."""
+    branché sur une fausse version d'Instagram, `updater` une fausse version de GitHub."""
     settings = settings or get_settings()
     settings.ensure_dirs()
     engine = make_engine(settings.db_path)
@@ -46,6 +49,7 @@ def create_app(
             settings,
             browser_factory or partial(BrowserSession, channels=settings.browser_channels),
         ),
+        updater=updater or Updater(settings, mode=detect_mode()),
     )
 
     @asynccontextmanager
@@ -86,6 +90,7 @@ def create_app(
 
     app.include_router(session.router)
     app.include_router(jobs.router)
+    app.include_router(update.router)
     # En dernier : toute autre adresse renvoie l'interface (application à page unique).
     mount_frontend(app, settings.frontend_dist, state.token)
     return app

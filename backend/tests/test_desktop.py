@@ -28,6 +28,7 @@ def test_installed_app_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     assert settings.data_dir == root / "data"
     assert settings.frontend_dist == tmp_path / "bundle" / "frontend" / "dist"
     assert settings.browser_channels == ["chrome", "msedge"]
+    assert settings.update_check  # coupée par défaut avec `iuc serve`, active ici
 
 
 def test_user_settings_win(tmp_path: Path) -> None:

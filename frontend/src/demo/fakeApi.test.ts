@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { JobEventType } from '../api/events'
-import type { ItemsPage, Job, JobReport, SessionStatus } from '../api/types'
+import type { ItemsPage, Job, JobReport, SessionStatus, UpdateInfo } from '../api/types'
 import { FakeApi } from './fakeApi'
 
 const FAST = { latency: 0, login: 0, scanStep: 500, scanMs: 1, batchMs: 1 }
@@ -162,6 +162,16 @@ describe('démo en ligne : fausse API', () => {
     expect(types[0]).toBe('snapshot')
     expect(types).toContain('status')
     expect(types).toContain('batch')
+  })
+
+  it('ne propose jamais de mise à jour', async () => {
+    const api = new FakeApi(FAST)
+
+    const update = await call<UpdateInfo>(api, 'GET', '/api/update')
+    const install = await call(api, 'POST', '/api/update/install')
+
+    expect(update.body.available).toBe(false)
+    expect(install.status).toBe(409)
   })
 
   it('« Supprimer mes données locales » repart d’une base vide', async () => {

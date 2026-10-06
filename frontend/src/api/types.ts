@@ -13,6 +13,7 @@ export type ItemsPage = Schemas['ItemsPage']
 export type ItemStatus = Schemas['ItemStatus']
 export type MediaKind = Schemas['MediaKind']
 export type SortOrder = Schemas['SortOrder']
+export type UpdateInfo = Schemas['UpdateOut']
 
 /** Rapport d'un nettoyage (GET /api/jobs/{id}/report), tel que produit par
  * `JobReport.to_dict()` côté backend : cette route renvoie un dictionnaire libre. */

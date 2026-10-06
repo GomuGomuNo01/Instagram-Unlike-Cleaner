@@ -12,6 +12,7 @@ import type {
   MediaKind,
   ReportLine,
   SessionStatus,
+  UpdateInfo,
 } from '../api/types'
 import { jobStatusLabels } from '../i18n/fr'
 import { localToday } from '../lib/filters'
@@ -63,6 +64,16 @@ const STOP_MESSAGES = {
   user_stop: 'Nettoyage arrêté à ta demande : les likes restants ne seront pas retirés.',
 } as const
 type StopReason = keyof typeof STOP_MESSAGES
+const UPDATE_OFF: UpdateInfo = {
+  enabled: false,
+  mode: 'source',
+  current: 'démo',
+  latest: null,
+  available: false,
+  release_url: 'https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/releases/latest',
+  download_url: null,
+  error: null,
+}
 
 interface DemoLike {
   key: string
@@ -202,6 +213,10 @@ export class FakeApi {
     if (path === '/api/jobs' && method === 'GET')
       return [...this.jobs.values()].map((job) => this.out(job))
     if (path === '/api/jobs' && method === 'POST') return this.createJob(body)
+    // Démo en ligne : rien à mettre à jour, la page sert toujours la dernière version.
+    if (path === '/api/update' && method === 'GET') return UPDATE_OFF
+    if (path === '/api/update/install' && method === 'POST')
+      throw new HttpError(409, 'Mises à jour désactivées dans la démo.')
 
     const match = /^\/api\/jobs\/(\d+)(?:\/(items|start|resume|pause|stop|report))?$/.exec(path)
     if (!match) throw new HttpError(404, 'Route inconnue.')

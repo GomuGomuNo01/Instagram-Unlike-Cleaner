@@ -121,8 +121,21 @@ def run_server(
     typer.echo(f"Jeton de l'API (en-tête {TOKEN_HEADER}) : {token}")
     typer.echo("Ctrl+C pour arrêter le serveur : un nettoyage en cours passe en pause.")
     # Journal d'accès désactivé : il afficherait le jeton passé dans l'URL du flux SSE.
-    config = uvicorn.Config(api, host="127.0.0.1", port=port, access_log=False, log_level="warning")
+    config = uvicorn.Config(
+        api,
+        host="127.0.0.1",
+        port=port,
+        access_log=False,
+        log_level="warning",
+        # À l'arrêt, un flux d'événements resté ouvert ne retient pas IUC plus de 5 s.
+        timeout_graceful_shutdown=5,
+    )
     server = uvicorn.Server(config)
+
+    def stop() -> None:
+        server.should_exit = True  # arrêt propre : un nettoyage en cours passe en pause
+
+    api.state.iuc.shutdown = stop
     if on_server is not None:
         on_server(server)
 

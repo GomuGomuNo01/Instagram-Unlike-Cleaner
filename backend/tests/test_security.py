@@ -30,6 +30,7 @@ from app.core.logs import LOG_FILE_NAME, setup_logging
 from app.core.privacy import MASK, redact_form_values
 from app.main import create_app
 from app.models.schemas import CleanupFilters
+from app.services import update
 from app.services.cleanup import StopReason
 from app.services.preview import run_preview
 from tests.fake_instagram import (
@@ -252,7 +253,8 @@ async def test_chromium_never_offers_to_save_credentials(tmp_path: Path) -> None
 # --- Données locales : tout dans DATA_DIR, aucun appel vers un serveur tiers --------------
 
 # Bibliothèques capables de contacter un serveur : seul Chromium, piloté par Playwright,
-# parle à Instagram. L'API ne fait qu'écouter sur 127.0.0.1 (uvicorn).
+# parle à Instagram. L'API ne fait qu'écouter sur 127.0.0.1 (uvicorn). Seule exception : la
+# recherche de mises à jour, en lecture sur les Releases GitHub du projet (test_update.py).
 NETWORK_MODULES = (
     "requests",
     "httpx",
@@ -267,9 +269,14 @@ NETWORK_MODULES = (
 )
 
 
-def test_backend_never_opens_a_network_connection_itself() -> None:
+UPDATER = APP_DIR / "services" / "update.py"
+
+
+def test_only_the_updater_opens_a_network_connection() -> None:
     offenders = []
     for path, tree in python_files(APP_DIR):
+        if path == UPDATER:
+            continue
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
                 names = [alias.name for alias in node.names]
@@ -286,6 +293,21 @@ def test_backend_never_opens_a_network_connection_itself() -> None:
     assert offenders == []
 
 
+def test_the_updater_only_reads_the_project_releases() -> None:
+    project = "GomuGomuNo01/Instagram-Unlike-Cleaner/"
+    tree = ast.parse(UPDATER.read_text(encoding="utf-8"))
+    urls = {
+        node.value
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Constant) and isinstance(node.value, str) and "://" in node.value
+    }
+
+    # Adresses écrites dans le module : uniquement GitHub, et uniquement ce dépôt.
+    assert urls == {"https://api.github.com/repos/", "https://github.com/"}
+    assert update.LATEST_RELEASE_API.startswith(f"https://api.github.com/repos/{project}")
+    assert update.DOWNLOAD_PREFIX.startswith(f"https://github.com/{project}")
+
+
 def test_every_local_file_lives_in_data_dir(tmp_path: Path) -> None:
     settings = Settings(_env_file=None, data_dir=tmp_path / "donnees")
 
@@ -295,6 +317,7 @@ def test_every_local_file_lives_in_data_dir(tmp_path: Path) -> None:
         settings.reports_dir,
         settings.logs_dir,
         settings.diagnostics_dir,
+        settings.updates_dir,
     ):
         assert settings.data_dir in path.parents
 

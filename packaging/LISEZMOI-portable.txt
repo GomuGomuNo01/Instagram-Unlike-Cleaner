@@ -10,6 +10,8 @@ Aucune installation : double-clique sur IUC.exe.
   signature est payante). Clique sur « Informations complémentaires », puis « Exécuter
   quand même ».
 - Prérequis : Google Chrome ou Microsoft Edge, que IUC pilote dans une fenêtre dédiée.
+- Nouvelle version : un bandeau la signale dans IUC, avec le lien de la nouvelle archive.
+  Quitte IUC, puis remplace ce dossier par le nouveau ; tes données restent en place.
 - Tes données restent sur ton ordinateur, dans %LOCALAPPDATA%\IUC. Supprime-les depuis IUC
   (« Supprimer mes données locales ») avant de supprimer ce dossier.
 

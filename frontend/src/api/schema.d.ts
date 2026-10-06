@@ -274,6 +274,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Update Status
+         * @description Indique si une version plus récente est publiée sur GitHub (lecture seule, vérifiée
+         *     au plus toutes les six heures).
+         */
+        get: operations["update_status_api_update_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/update/install": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Install Update
+         * @description Télécharge l'installeur de la dernière version et vérifie son empreinte SHA-256, met
+         *     en pause un nettoyage en cours, lance l'installeur puis ferme IUC : l'installeur remplace
+         *     l'application et la relance. Les données locales sont gardées.
+         */
+        post: operations["install_update_api_update_install_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -468,6 +511,52 @@ export interface components {
              * @description Nombre maximal de likes à retirer pendant cette exécution.
              */
             limit?: number | null;
+        };
+        /** UpdateInstallOut */
+        UpdateInstallOut: {
+            /**
+             * Version
+             * @description Version en cours d'installation.
+             */
+            version: string;
+        };
+        /** UpdateOut */
+        UpdateOut: {
+            /**
+             * Enabled
+             * @description Recherche des mises à jour activée (UPDATE_CHECK).
+             */
+            enabled: boolean;
+            /**
+             * Mode
+             * @description installer : mise à jour en un clic ; portable : nouvelle archive à télécharger ; source : `git pull`.
+             * @enum {string}
+             */
+            mode: "installer" | "portable" | "source";
+            /** Current */
+            current: string;
+            /**
+             * Latest
+             * @description Dernière version publiée, si GitHub a répondu.
+             */
+            latest: string | null;
+            /**
+             * Available
+             * @description Une version plus récente que celle-ci est publiée.
+             */
+            available: boolean;
+            /**
+             * Release Url
+             * @description Page de la dernière version (nouveautés).
+             */
+            release_url: string;
+            /**
+             * Download Url
+             * @description Archive à télécharger (version portable).
+             */
+            download_url: string | null;
+            /** Error */
+            error: string | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -953,6 +1042,64 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_status_api_update_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    install_update_api_update_install_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateInstallOut"];
                 };
             };
             /** @description Validation Error */

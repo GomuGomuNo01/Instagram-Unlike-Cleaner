@@ -7,7 +7,8 @@ Même programme que `iuc serve`, avec des réglages adaptés à une installation
 - navigateur déjà installé (Google Chrome, sinon Microsoft Edge) plutôt qu'un Chromium
   embarqué de 150 Mo ;
 - aucune fenêtre de console : une icône près de l'horloge rouvre l'interface ou quitte IUC,
-  et relancer IUC.exe rouvre simplement l'interface déjà lancée.
+  et relancer IUC.exe rouvre simplement l'interface déjà lancée ;
+- recherche des nouvelles versions sur GitHub, installées en un clic depuis l'interface.
 Chaque réglage reste modifiable par une variable d'environnement ou le fichier .env.
 """
 
@@ -37,6 +38,7 @@ def configure(bundle: Path, environ: MutableMapping[str, str] = os.environ) -> P
     environ.setdefault("DATA_DIR", str(root / "data"))
     environ.setdefault("FRONTEND_DIST", str(bundle / "frontend" / "dist"))
     environ.setdefault("BROWSER_CHANNELS", DESKTOP_BROWSERS)
+    environ.setdefault("UPDATE_CHECK", "true")
     return root
 
 
@@ -50,7 +52,7 @@ def silence_missing_streams() -> None:
 
 
 # Verrou nommé de Windows, gardé ouvert tant qu'IUC tourne : un second IUC.exe le trouve
-# déjà pris. Aucune connexion réseau (le backend n'en ouvre jamais, voir test_security).
+# déjà pris, et l'installeur d'une mise à jour attend qu'il soit libéré (packaging/iuc.iss).
 INSTANCE_LOCK = r"Local\IUC-Instagram-Unlike-Cleaner"
 _ERROR_ALREADY_EXISTS = 183
 _held_locks: list[int] = []

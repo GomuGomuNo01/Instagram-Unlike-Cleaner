@@ -41,6 +41,9 @@ class Settings(BaseSettings):
     # Navigateurs à essayer, dans l'ordre, jusqu'au premier qui s'ouvre. L'application
     # Windows utilise Chrome ou Edge déjà installés, plutôt que d'embarquer Chromium.
     browser_channels: list[BrowserChannel] = Field(default=["chromium"], min_length=1)
+    # Recherche d'une nouvelle version sur les Releases GitHub du projet (lecture seule, rien
+    # n'est envoyé). Activée par l'application Windows ; UPDATE_CHECK=false la coupe.
+    update_check: bool = False
 
     @field_validator("log_level", mode="before")
     @classmethod
@@ -72,6 +75,10 @@ class Settings(BaseSettings):
     @property
     def diagnostics_dir(self) -> Path:
         return self.data_dir / "diagnostics"
+
+    @property
+    def updates_dir(self) -> Path:
+        return self.data_dir / "updates"
 
     def ensure_dirs(self) -> None:
         """Crée le dossier de données et ses sous-dossiers s'ils n'existent pas."""

@@ -19,6 +19,7 @@ from sqlalchemy import Engine
 from app.browser.session import CLOSED_STATUS, BrowserSession, SessionStatus
 from app.core.config import Settings
 from app.services.cleanup import CleanupControl
+from app.services.update import Updater
 
 logger = logging.getLogger(__name__)
 
@@ -171,5 +172,9 @@ class ApiState:
     engine: Engine
     token: str
     browser: BrowserManager
+    updater: Updater
     runner: TaskRunner = field(default_factory=TaskRunner)
     hub: EventHub = field(default_factory=EventHub)
+    # Arrête proprement le serveur (fourni par `iuc serve` et l'application Windows) : sert
+    # à fermer IUC pendant qu'une mise à jour s'installe.
+    shutdown: Callable[[], None] | None = None

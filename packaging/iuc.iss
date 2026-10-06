@@ -2,6 +2,8 @@
 ; PyInstaller (build\dist\IUC) pour l'utilisateur courant, sans droits administrateur,
 ; avec un raccourci dans le menu Démarrer. Les données (%LOCALAPPDATA%\IUC) sont gardées à
 ; la désinstallation : on les supprime depuis IUC (« Supprimer mes données locales »).
+; Mise à jour depuis IUC : installation silencieuse avec /UPDATE=1, qui attend la fermeture
+; d'IUC puis le relance (voir backend/app/services/update.py).
 ;   set IUC_VERSION=1.0.0 && iscc packaging\iuc.iss
 
 #define AppVersion GetEnv("IUC_VERSION")
@@ -47,3 +49,32 @@ Name: "{autodesktop}\IUC"; Filename: "{app}\IUC.exe"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\IUC.exe"; Description: "{cm:LaunchProgram,IUC}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\IUC.exe"; Flags: nowait; Check: IsUpdate
+
+[Code]
+const
+  // Verrou tenu par IUC.exe tant qu'il tourne (backend/app/desktop.py).
+  InstanceLock = 'Local\IUC-Instagram-Unlike-Cleaner';
+  MaxWaitMs = 60000;
+
+function IsUpdate: Boolean;
+begin
+  Result := ExpandConstant('{param:UPDATE|0}') = '1';
+end;
+
+function InitializeSetup: Boolean;
+var
+  Waited: Integer;
+begin
+  // Mise à jour lancée par IUC : ses fichiers ne sont remplaçables qu'une fois IUC fermé.
+  if IsUpdate then
+  begin
+    Waited := 0;
+    while CheckForMutexes(InstanceLock) and (Waited < MaxWaitMs) do
+    begin
+      Sleep(250);
+      Waited := Waited + 250;
+    end;
+  end;
+  Result := True;
+end;

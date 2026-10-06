@@ -760,6 +760,80 @@
           }
         }
       }
+    },
+    "/api/update": {
+      "get": {
+        "tags": [
+          "mise à jour"
+        ],
+        "summary": "Update Status",
+        "description": "Indique si une version plus récente est publiée sur GitHub (lecture seule, vérifiée\nau plus toutes les six heures).",
+        "operationId": "update_status_api_update_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/api/update/install": {
+      "post": {
+        "tags": [
+          "mise à jour"
+        ],
+        "summary": "Install Update",
+        "description": "Télécharge l'installeur de la dernière version et vérifie son empreinte SHA-256, met\nen pause un nettoyage en cours, lance l'installeur puis ferme IUC : l'installeur remplace\nl'application et la relance. Les données locales sont gardées.",
+        "operationId": "install_update_api_update_install_post",
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateInstallOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -1230,6 +1304,100 @@
         },
         "type": "object",
         "title": "StartRequest"
+      },
+      "UpdateInstallOut": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "title": "Version",
+            "description": "Version en cours d'installation."
+          }
+        },
+        "type": "object",
+        "required": [
+          "version"
+        ],
+        "title": "UpdateInstallOut"
+      },
+      "UpdateOut": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "description": "Recherche des mises à jour activée (UPDATE_CHECK)."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "installer",
+              "portable",
+              "source"
+            ],
+            "title": "Mode",
+            "description": "installer : mise à jour en un clic ; portable : nouvelle archive à télécharger ; source : `git pull`."
+          },
+          "current": {
+            "type": "string",
+            "title": "Current"
+          },
+          "latest": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest",
+            "description": "Dernière version publiée, si GitHub a répondu."
+          },
+          "available": {
+            "type": "boolean",
+            "title": "Available",
+            "description": "Une version plus récente que celle-ci est publiée."
+          },
+          "release_url": {
+            "type": "string",
+            "title": "Release Url",
+            "description": "Page de la dernière version (nouveautés)."
+          },
+          "download_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Download Url",
+            "description": "Archive à télécharger (version portable)."
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "enabled",
+          "mode",
+          "current",
+          "latest",
+          "available",
+          "release_url",
+          "download_url",
+          "error"
+        ],
+        "title": "UpdateOut"
       },
       "ValidationError": {
         "properties": {

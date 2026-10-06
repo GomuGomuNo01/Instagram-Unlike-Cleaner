@@ -8,6 +8,7 @@ from app.browser.session import SessionStatus
 from app.models.schemas import CleanupFilters
 from app.models.tables import ItemStatus, JobStatus, LikedItem, MediaKind
 from app.services.jobs import JobOverview
+from app.services.update import PORTABLE_DOWNLOAD, RELEASE_PAGE, InstallMode, UpdateStatus
 
 
 class SessionStatusOut(BaseModel):
@@ -110,3 +111,34 @@ class StartRequest(BaseModel):
 
 class DeletedOut(BaseModel):
     deleted: list[str]
+
+
+class UpdateOut(BaseModel):
+    enabled: bool = Field(description="Recherche des mises à jour activée (UPDATE_CHECK).")
+    mode: InstallMode = Field(
+        description="installer : mise à jour en un clic ; portable : nouvelle archive à "
+        "télécharger ; source : `git pull`."
+    )
+    current: str
+    latest: str | None = Field(description="Dernière version publiée, si GitHub a répondu.")
+    available: bool = Field(description="Une version plus récente que celle-ci est publiée.")
+    release_url: str = Field(description="Page de la dernière version (nouveautés).")
+    download_url: str | None = Field(description="Archive à télécharger (version portable).")
+    error: str | None
+
+    @classmethod
+    def build(cls, status: UpdateStatus) -> "UpdateOut":
+        return cls(
+            enabled=status.enabled,
+            mode=status.mode,
+            current=status.current,
+            latest=status.latest,
+            available=status.available,
+            release_url=RELEASE_PAGE,
+            download_url=PORTABLE_DOWNLOAD if status.mode == "portable" else None,
+            error=status.error,
+        )
+
+
+class UpdateInstallOut(BaseModel):
+    version: str = Field(description="Version en cours d'installation.")
