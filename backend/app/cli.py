@@ -23,7 +23,6 @@ from app.browser.session import (
     NavigationOutcome,
     SessionStatus,
 )
-from app.core.codespaces import forwarded_host
 from app.core.config import Settings, get_settings
 from app.core.db import OutdatedSchemaError, init_db, make_engine
 from app.core.logs import setup_logging
@@ -117,8 +116,6 @@ def run_server(
     api = create_app(settings, token=token)
     url = f"http://127.0.0.1:{port}"
     typer.echo(f"Interface : {url}")
-    if public_host := forwarded_host(port):
-        typer.echo(f"Dans ce Codespace : https://{public_host}")
     if settings.api_docs:
         typer.echo(f"Documentation de l'API : {url}/docs (chargée depuis un CDN)")
     typer.echo(f"Jeton de l'API (en-tête {TOKEN_HEADER}) : {token}")

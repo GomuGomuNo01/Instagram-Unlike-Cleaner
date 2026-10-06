@@ -16,7 +16,6 @@ import {
   SkeletonBlock,
   useToast,
 } from '../components/ui'
-import { codespaceDesktopUrl } from '../lib/codespaces'
 
 const POLL_MS = 2000
 
@@ -27,7 +26,6 @@ export function LoginPage() {
   const [opening, setOpening] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const wasLoggedIn = useRef<boolean | null>(null)
-  const desktop = codespaceDesktopUrl()
 
   useEffect(() => {
     let active = true
@@ -85,19 +83,6 @@ export function LoginPage() {
         description="IUC ouvre une fenêtre Chromium dédiée. Tu t’y connectes toi-même : aucun champ du formulaire n’est lu."
         actions={action}
       />
-      {desktop && (
-        <Alert title="Tu utilises IUC dans GitHub Codespaces" className="mb-4">
-          <p>
-            La fenêtre Chromium s’affiche dans le bureau distant de ton Codespace. Ouvre-le dans un
-            autre onglet, clique ici sur « Ouvrir Instagram », puis connecte-toi dans ce bureau.
-          </p>
-          <p className="mt-2">
-            <a className="link" href={desktop} target="_blank" rel="noreferrer">
-              Ouvrir le bureau distant
-            </a>
-          </p>
-        </Alert>
-      )}
       <Card padding="lg">
         <div aria-live="polite" className="space-y-4">
           <SessionMessage status={status} />
@@ -105,8 +90,8 @@ export function LoginPage() {
         </div>
         <p className="mt-6 flex items-center gap-3 border-t border-border pt-6 text-small text-fg-muted">
           <LockIcon className="h-5 w-5 text-primary-strong" />
-          Ton mot de passe ne passe jamais par IUC. La session reste dans le dossier d’IUC,
-          {desktop ? ' dans ton Codespace, que toi seul contrôles.' : ' sur ton ordinateur.'}
+          Ton mot de passe ne passe jamais par IUC. La session reste dans le dossier d’IUC, sur ton
+          ordinateur.
         </p>
       </Card>
     </AppPage>

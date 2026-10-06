@@ -5,18 +5,17 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-API%20locale-009688?logo=fastapi&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-291%20pass%C3%A9s-1BAF7A)
+![Tests](https://img.shields.io/badge/tests-283%20pass%C3%A9s-1BAF7A)
 [![Version](https://img.shields.io/github/v/release/GomuGomuNo01/Instagram-Unlike-Cleaner?label=version)](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/releases/latest)
 [![CI](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/actions/workflows/ci.yml?query=branch%3Amain)
 
 Projet de bout en bout : un outil **100 % local** qui retire en masse les likes Instagram d’une
 personne, après validation de chaque like ciblé, **sans jamais voir son mot de passe**. Essayé
-sur un vrai compte (**1 493 likes recensés en 14 minutes**) et prouvé par **291 tests
+sur un vrai compte (**1 493 likes recensés en 14 minutes**) et prouvé par **283 tests
 automatisés**.
 
 [![Essayer la démo en ligne](https://img.shields.io/badge/Essayer%20la%20d%C3%A9mo-en%20ligne%2C%20sans%20installation-4F46E5?style=for-the-badge)](https://gomugomuno01.github.io/Instagram-Unlike-Cleaner/)
 [![Télécharger pour Windows](https://img.shields.io/badge/T%C3%A9l%C3%A9charger-Windows%2C%20installeur-0078D4?style=for-the-badge)](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/releases/latest/download/IUC-Setup.exe)
-[![Tester dans GitHub Codespaces](https://img.shields.io/badge/Tester%20la%20vraie%20version-GitHub%20Codespaces-24292F?style=for-the-badge&logo=github&logoColor=white)](https://codespaces.new/GomuGomuNo01/Instagram-Unlike-Cleaner?quickstart=1)
 
 *Démo : la vraie interface sur des likes fictifs, sans compte. Windows : installeur, ou
 [version portable](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/releases/latest/download/IUC-portable.zip)
@@ -79,7 +78,7 @@ serveur tiers : on échange un problème de confidentialité contre un autre.
 | **Construire le moteur** | Ciblage par le filtre d’Instagram, retrait par lots contrôlés, journal en base pour reprendre sans rien retraiter |
 | **Rendre l’outil utilisable** | Une interface web en cinq étapes (connexion, critères, aperçu, suivi, rapport) et une ligne de commande |
 | **Prouver la sécurité** | Des tests qui vérifient chaque garantie, une intégration continue et des audits de dépendances |
-| **Mettre à disposition** | Une démo en ligne, la vraie version testable dans GitHub Codespaces, une application Windows publiée |
+| **Mettre à disposition** | Une démo en ligne sans installation, et une application Windows publiée (installeur ou version portable) |
 
 ### Ce que ce projet démontre
 
@@ -120,8 +119,8 @@ fausse page de connexion, puis les cherchent dans tous les fichiers produits : i
 limite ou interface modifiée : le nettoyage s’arrête aussitôt, passe en pause et indique la
 marche à suivre.
 
-**N’importe qui peut l’essayer.** Démo en ligne pour découvrir, GitHub Codespaces pour la vraie
-version sans installation, application Windows (installeur ou portable) pour l’usage courant.
+**N’importe qui peut l’essayer.** Démo en ligne pour découvrir, sans installation ni compte ;
+application Windows (installeur ou portable) pour l’usage réel.
 
 Le détail se trouve dans les sections [Résultats détaillés](#10-résultats-détaillés) et
 [Étapes de réalisation](#8-étapes-de-réalisation).
@@ -155,7 +154,7 @@ cahiers des charges, présentation et développeur, conservés hors du dépôt p
 | 4 | Comment ne rien retirer par erreur ? | Contrôle de la sélection avant chaque lot, vérification au rechargement après |
 | 5 | Comment limiter le risque pour le compte ? | Pauses aléatoires, limite quotidienne, arrêt immédiat sur alerte d’Instagram |
 | 6 | Comment reprendre après une coupure ? | Chaque lot est écrit en base avant le suivant ; la reprise ne retraite rien |
-| 7 | Comment le faire essayer facilement ? | Démo en ligne, GitHub Codespaces, application Windows |
+| 7 | Comment le faire essayer facilement ? | Démo en ligne sans installation, application Windows à télécharger |
 
 **Garantie centrale : rien n’est retiré sans validation de la personne.**
 
@@ -168,7 +167,7 @@ cahiers des charges, présentation et développeur, conservés hors du dépôt p
 | Ce qui n’est jamais lu | Le mot de passe et tout champ du formulaire de connexion ; les diagnostics masquent toute saisie |
 | Stockage | Tout dans un seul dossier local (`DATA_DIR`) : profil du navigateur, base SQLite, journaux, rapports |
 | Exports | Rapport CSV (prêt pour Excel) et JSON de chaque nettoyage |
-| Effacement | « Supprimer mes données locales », `iuc purge`, ou suppression du Codespace |
+| Effacement | « Supprimer mes données locales » ou `iuc purge` |
 | Démo et captures | Uniquement des comptes fictifs ; aucun compte réellement aimé dans le dépôt public, vérifié par un test |
 
 Le backend n’ouvre aucune connexion réseau lui-même : seul le navigateur parle à Instagram, et
@@ -186,7 +185,7 @@ un test échoue si un module réseau apparaît dans son code.
 | **Tailwind CSS 4** | Système de design | Tokens (couleurs, typographie, espacements, motion) vérifiés par un test |
 | **pytest, Vitest, Ruff, mypy, Oxlint** | Qualité | Lint, typage strict et tests à chaque modification |
 | **GitHub Actions** | Intégration continue et publication | Python 3.11 et 3.14, audits des dépendances, démo et application publiées automatiquement |
-| **GitHub Pages, GitHub Codespaces** | Démo en ligne, vraie version sans installation | Gratuits, et aucun serveur du projet ne voit les données des utilisateurs |
+| **GitHub Pages** | Démo en ligne | Gratuit, et aucun serveur du projet ne voit les données des utilisateurs |
 | **PyInstaller, Inno Setup, pystray** | Application Windows | Installeur ou version portable ; IUC tourne sans fenêtre, piloté depuis la zone de notification |
 
 ## 7. Méthodologie
@@ -198,7 +197,7 @@ flowchart LR
     C --> D[4. API et CLI]
     D --> E[5. Interface web]
     E --> F[6. Sécurité<br/>prouvée par les tests]
-    F --> G[7. Mise à disposition<br/>démo, Codespaces, Windows]
+    F --> G[7. Mise à disposition<br/>démo en ligne, Windows]
 ```
 
 Trois principes ont guidé le travail :
@@ -256,7 +255,7 @@ Chaque garantie est appliquée dans le code et **prouvée par des tests**
 | Alertes Instagram | Limite, vérification, déconnexion : arrêt immédiat, en pause, marche à suivre | Fausse page qui déconnecte, vérifie ou limite en plein nettoyage |
 | Reprise | Chaque lot enregistré avant le suivant | Interruption, pause, limite puis reprise |
 | Changement d’interface | Sélecteurs isolés ([`locators.py`](backend/app/browser/locators.py)), vérification au démarrage | Bouton absent, vignettes illisibles, bouton renommé |
-| API locale | 127.0.0.1, jeton par démarrage, contrôle de l’hôte (plus, dans Codespaces, la seule adresse du Codespace), CORS restreint, en-têtes de sécurité | Tests de l’API, de `iuc serve` et de Codespaces |
+| API locale | 127.0.0.1, jeton par démarrage, contrôle de l’hôte, CORS restreint, en-têtes de sécurité | Tests de l’API et de `iuc serve` |
 | Dépendances | Versions figées ([`constraints.txt`](constraints.txt), `package-lock.json`), audits | `pip-audit` et `npm audit` sans vulnérabilité connue |
 | Journaux | Aucun nom de compte aimé ni secret ; niveau réglable | Comptes « témoins » cherchés dans le journal |
 | Dépôt public | Aucun compte réellement aimé dans les fichiers versionnés | Test de garde sur la base locale |
@@ -265,10 +264,10 @@ Chaque garantie est appliquée dans le code et **prouvée par des tests**
 
 | Niveau | Cible | Outil | Résultat |
 |---|---|---|---|
-| Unitaires | Filtre d’Instagram, limites quotidiennes, pauses aléatoires, machine d’états, exports | pytest | 242 tests serveur passés |
+| Unitaires | Filtre d’Instagram, limites quotidiennes, pauses aléatoires, machine d’états, exports | pytest | 235 tests serveur passés |
 | Intégration | API et base SQLite, reprise après un arrêt | pytest, httpx | inclus ci-dessus |
 | Automatisation | Navigation et retrait sur une fausse page des likes, réseau coupé | Playwright | inclus ci-dessus |
-| Frontend | Composants, écran des critères, parcours principal, démo en ligne, tokens du système de design | Vitest, Testing Library | 49 tests passés |
+| Frontend | Composants, écran des critères, parcours principal, démo en ligne, tokens du système de design | Vitest, Testing Library | 48 tests passés |
 | Application Windows | Démarrage réel d’`IUC.exe` avant chaque publication | GitHub Actions (Windows) | interface servie |
 | Continu | Lint, typage, tests, audits | GitHub Actions | Python 3.11 et 3.14 |
 | Manuel | Un lot réel sur un compte de test | [Recette](docs/recette.md) | 1 493 likes recensés, lots retirés et vérifiés |
@@ -281,7 +280,6 @@ diagnostics réels : paquets de 18 vignettes, mode sélection, fenêtre de confi
 | Mode | Pour qui | Fonctionnement |
 |---|---|---|
 | [Démo en ligne](https://gomugomuno01.github.io/Instagram-Unlike-Cleaner/) | Visiteurs, recruteurs | La vraie interface, branchée sur une fausse API qui tourne dans le navigateur ([`frontend/src/demo`](frontend/src/demo)), sur des likes fictifs. Compilée à part : la vraie version n’en contient aucune ligne |
-| [GitHub Codespaces](https://codespaces.new/GomuGomuNo01/Instagram-Unlike-Cleaner?quickstart=1) | Profils techniques | La vraie version, dans une machine temporaire sur le compte GitHub du testeur ([`.devcontainer`](.devcontainer)) ; fenêtre du navigateur dans un bureau distant, ports privés |
 | [Application Windows](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/releases/latest) | Utilisateurs | Installeur ou version portable ([`packaging/`](packaging)), données dans `%LOCALAPPDATA%\IUC`, Chrome ou Edge déjà installés ; sans fenêtre, icône près de l’horloge |
 
 Aucun mode ne fait passer de données par un serveur du projet : un tel serveur verrait les mots
@@ -329,8 +327,8 @@ rien retirer de plus, en pause, avec la marche à suivre :
 
 ### Qualité du code
 
-- **291 tests automatisés** : 242 côté serveur (dont l’automatisation sur la fausse page, réseau
-  coupé), 49 côté interface.
+- **283 tests automatisés** : 235 côté serveur (dont l’automatisation sur la fausse page, réseau
+  coupé), 48 côté interface.
 - Lint et **typage strict** des deux côtés (Ruff, mypy, Oxlint, TypeScript) à chaque envoi.
 - **Aucune vulnérabilité connue** dans les dépendances (`pip-audit`, `npm audit`), versions figées.
 - Application Windows **démarrée réellement** par l’intégration continue avant chaque publication.
@@ -364,8 +362,7 @@ rien retirer de plus, en pause, avec la marche à suivre :
 
 **Sur la mise à disposition**
 - Faire essayer un outil local sans rien héberger est possible : une **fausse API dans le
-  navigateur** pour la démo, **Codespaces** pour la vraie version, une **application Windows**
-  pour l’usage courant.
+  navigateur** pour la démo, une **application Windows** pour l’usage réel.
 - Un détail d’usage compte : une date avec heure s’affiche « ##### » dans Excel ; la séparer en
   deux colonnes rend le rapport lisible dès l’ouverture.
 
@@ -380,7 +377,7 @@ Instagram-Unlike-Cleaner/
 │   │   ├── browser/          Navigateur : session, sélecteurs, grille, filtre d’Instagram, sélection
 │   │   ├── services/         Aperçu, nettoyage, rapport, données locales
 │   │   ├── api/              API locale (FastAPI) et sécurité
-│   │   ├── core/             Configuration, base, journaux, protection des identifiants, Codespaces
+│   │   ├── core/             Configuration, base, journaux, protection des identifiants
 │   │   ├── cli.py            Commandes iuc
 │   │   ├── desktop.py        Point d’entrée de l’application Windows
 │   │   └── tray.py           Icône de la zone de notification
@@ -389,7 +386,6 @@ Instagram-Unlike-Cleaner/
 │   └── src/demo/             Fausse API de la démo en ligne (likes fictifs, dans le navigateur)
 ├── scripts/demo.py           Démonstration locale avec des données fictives
 ├── docs/                     Recette manuelle, page portfolio, images
-├── .devcontainer/            Vraie version dans GitHub Codespaces
 ├── packaging/                Application Windows (PyInstaller, Inno Setup)
 ├── constraints.txt           Versions figées des dépendances Python
 └── .github/workflows/        Intégration continue, démo en ligne, application Windows
@@ -411,17 +407,7 @@ Instagram-Unlike-Cleaner/
 Prérequis : Google Chrome ou Microsoft Edge. Données dans `%LOCALAPPDATA%\IUC`, gardées à la
 désinstallation.
 
-**Option 2 : la vraie version en ligne, sans installation**
-
-[![Ouvrir dans GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/GomuGomuNo01/Instagram-Unlike-Cleaner?quickstart=1)
-
-GitHub crée une machine temporaire sur **ton** compte GitHub (quota gratuit mensuel), installe
-IUC et le lance. La fenêtre du navigateur s’affiche dans un bureau distant, ouvert dans un autre
-onglet ; l’écran « Connexion » d’IUC y mène directement. Mot de passe, session et likes restent
-dans ce Codespace, dont les ports sont privés ; le supprimer efface tout. La connexion part d’un
-centre de données : Instagram peut demander une vérification, compte secondaire conseillé.
-
-**Option 3 : depuis le code source**
+**Option 2 : depuis le code source**
 
 Prérequis : Python 3.11 ou plus, Node.js 22 ou plus.
 

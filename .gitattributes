@@ -1,2 +1,0 @@
-# Scripts exécutés sous Linux (Codespaces) : fins de ligne LF, quel que soit le poste.
-*.sh text eol=lf
