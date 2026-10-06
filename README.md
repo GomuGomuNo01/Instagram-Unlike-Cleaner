@@ -1,139 +1,259 @@
-# Instagram Unlike Cleaner (IUC)
+# Instagram Unlike Cleaner : effacer ses « J’aime » Instagram sans confier son compte ?
 
+![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
+![Playwright](https://img.shields.io/badge/Playwright-Chromium-2EAD33?logo=playwright&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-API%20locale-009688?logo=fastapi&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-283%20passés-1BAF7A)
 [![CI](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/actions/workflows/ci.yml?query=branch%3Amain)
-· Licence MIT · Python 3.11+ · Node.js 22+
 
-Une personne veut effacer des années de « J’aime » Instagram, mais l’application ne permet de
-les retirer qu’à la main, et les outils existants demandent souvent le mot de passe ou envoient
-les données à un tiers. IUC liste d’abord tous les likes ciblés (période, type, comptes) pour
-validation, puis les retire par lots avec pauses et limite quotidienne, sans jamais voir le mot
-de passe ni rien envoyer hors de l’ordinateur. Sur un vrai compte, 1 493 likes ont été recensés
-en 14 minutes et chaque lot retiré est contrôlé ; 283 tests automatisés prouvent qu’aucun
-identifiant n’est lu ni conservé.
-
-Technologies : Python, Playwright, FastAPI, SQLite, React, TypeScript, Tailwind CSS, GitHub
-Actions.
-
-> **Avertissement : à lire avant toute utilisation**
->
-> Les conditions d’utilisation d’Instagram **n’autorisent pas l’automatisation**. Utiliser IUC
-> expose ton compte à un **blocage temporaire** de certaines actions, voire, plus rarement, à
-> une **suspension**. IUC limite la cadence et s’arrête au moindre signal d’Instagram, mais le
-> risque zéro n’existe pas.
->
-> - **Teste d’abord sur un compte secondaire**, avec de petits volumes (option « Faire d’abord
->   un essai », `--limit`).
-> - Retirer un like efface la trace visible, pas ce que l’algorithme a déjà appris.
-> - IUC est un projet indépendant, **sans lien avec Instagram ni Meta**. Utilise-le uniquement
->   sur ton propre compte, à tes risques.
-
-## Fonctionnement
-
-1. **Connexion** : IUC ouvre une fenêtre Chromium dédiée. Tu t’y connectes toi-même, double
-   authentification comprise. IUC ne voit jamais ton mot de passe.
-2. **Critères** : période du like, ordre, type de contenu (publications ou reels), comptes à
-   cibler ou à protéger, choisis dans la liste des comptes de tes likes.
-3. **Aperçu** : chaque like ciblé est listé ; tu décoches ceux à garder. Rien n’est retiré avant
-   ton lancement.
-4. **Nettoyage** : retrait par lots (« Je n’aime plus »), pauses aléatoires, limite quotidienne,
-   suivi en direct, pause, reprise ou arrêt à tout moment.
-5. **Rapport** : bilan chiffré, échecs détaillés, export CSV et JSON.
-
-L’interface web (React) est servie par une API locale (FastAPI) ; une CLI (`iuc`) offre les
-mêmes fonctions. Un seul navigateur, piloté par Playwright, parle à Instagram.
+Un outil **100 % local** qui retire en masse les likes Instagram, après validation de chaque like
+ciblé, **sans jamais voir le mot de passe** : du besoin de l’utilisateur jusqu’à l’interface web,
+la ligne de commande et les preuves de sécurité.
 
 ![Démonstration du parcours, avec des données fictives](docs/images/demo.gif)
 
-## Captures
+| Vous êtes... | Commencez par |
+|---|---|
+| Recruteur, manager, profil métier | [Partie 1 : l'essentiel en 3 minutes](#partie-1--lessentiel-en-3-minutes) |
+| Développeur, profil technique | [Partie 2 : le détail technique](#partie-2--le-détail-technique) |
 
-Toutes les captures utilisent des comptes fictifs (`scripts/demo.py`).
+> **Avertissement** : les conditions d’utilisation d’Instagram **n’autorisent pas
+> l’automatisation**. Utiliser IUC expose le compte à un blocage temporaire de certaines actions,
+> voire, plus rarement, à une suspension. **Teste d’abord sur un compte secondaire**, avec de
+> petits volumes. Retirer un like efface la trace visible, pas ce que l’algorithme a déjà appris.
+> IUC est un projet indépendant, sans lien avec Instagram ni Meta.
+
+---
+
+# Partie 1 : l'essentiel en 3 minutes
+
+## Le contexte
+
+Des années de likes Instagram laissent une trace visible, parfois gênante au moment d’une
+recherche de stage ou d’emploi. Instagram permet de les retirer, mais à la main, quelques-uns à
+la fois. Les outils existants demandent souvent le mot de passe ou envoient les données à un
+serveur tiers : on échange un problème de confidentialité contre un autre.
+
+> **Comment retirer des centaines de likes en gardant la main sur chacun, sans confier son
+> compte ni ses données à personne ?**
+
+## Ce que j'ai fait
+
+| Étape | En clair |
+|---|---|
+| 1. Cadrer le besoin et les risques | Aucun mot de passe, tout en local, aperçu obligatoire, cadence prudente, arrêt au moindre signal d’Instagram |
+| 2. Valider la faisabilité | Un prototype qui ouvre la page des likes dans un navigateur piloté, la personne s’y connectant elle-même |
+| 3. Construire le moteur | Collecte des likes ciblés, retrait par lots contrôlés, journal en base pour reprendre sans rien retraiter |
+| 4. Rendre l’outil utilisable | Une interface web en cinq étapes (connexion, critères, aperçu, suivi, rapport) et une ligne de commande |
+| 5. Prouver la sécurité | Des tests qui vérifient chaque garantie, une intégration continue et des audits de dépendances |
+
+**Le principe clé : rien n’est retiré sans validation.** IUC liste d’abord chaque like ciblé
+(période, type de contenu, comptes à cibler ou à protéger) ; la personne décoche ce qu’elle veut
+garder, puis lance le nettoyage.
+
+## Ce que montrent les essais
+
+**1. L’outil passe à l’échelle d’un vrai historique.** Sur un compte réel, **1 493 likes** ont été
+recensés en **14 minutes**, puis des lots ont été retirés à un rythme d’environ **25 likes par
+minute**, pauses comprises.
+
+**2. Chaque retrait est vérifié.** Avant de cliquer sur « Je n’aime plus », IUC contrôle que les
+cases cochées sont exactement celles du lot prévu ; après, il recharge la page : un like qui
+réapparaît est marqué en échec, jamais compté comme retiré.
+
+**3. Le mot de passe ne passe jamais par IUC.** Des tests tapent de faux identifiants dans une
+fausse page de connexion puis les cherchent dans tous les fichiers produits : ils n’y sont pas.
+Une revue de sécurité a corrigé une fuite possible dans les diagnostics, et un test échoue si la
+protection disparaît.
+
+**4. L’outil s’arrête au bon moment.** Déconnexion forcée, vérification de sécurité, message
+« Réessayer plus tard » ou interface modifiée : le nettoyage s’arrête aussitôt, passe en pause et
+indique la marche à suivre.
 
 | Critères et liste de tes comptes | Aperçu à cocher |
-| --- | --- |
+|---|---|
 | ![Critères du nettoyage](docs/images/criteres.png) | ![Aperçu du nettoyage](docs/images/apercu.png) |
 | **Suivi en direct** | **Rapport final** |
 | ![Suivi d'un nettoyage en pause](docs/images/suivi.png) | ![Rapport d'un nettoyage terminé](docs/images/rapport.png) |
 
-| Page d’accueil | Mobile, thème sombre |
-| --- | --- |
-| ![Page d'accueil](docs/images/accueil.png) | ![Aperçu sur mobile en thème sombre](docs/images/mobile-sombre.png) |
+<details>
+<summary><b>Voir la page d’accueil et la version mobile</b></summary>
+
+![Page d'accueil](docs/images/accueil.png)
+![Aperçu sur mobile en thème sombre](docs/images/mobile-sombre.png)
+
+</details>
+
+*Toutes les captures utilisent des comptes fictifs ([`scripts/demo.py`](scripts/demo.py)).*
+
+## Ce que ce projet démontre
+
+- **Sens du besoin** : partir d’une contrainte utilisateur forte (confidentialité) et en faire des
+  règles vérifiables, inscrites dans le code et les tests.
+- **Rigueur** : chaque action est contrôlée avant et après, chaque résultat est enregistré avant
+  la suite, chaque garantie de sécurité a son test.
+- **Technique** : automatisation de navigateur, API locale sécurisée, base de données, interface
+  web accessible, intégration continue.
+- **Communication** : une interface en français, claire, utilisable au clavier et sur mobile, et
+  des messages qui disent toujours quoi faire.
+
+## Les limites, en toute transparence
+
+L’outil dépend de l’interface web d’Instagram, qui peut changer ; seule l’interface française est
+confirmée ; Instagram n’indique pas la date des likes dans la grille, seulement celle des
+publications. Détail en [partie 2](#limites).
+
+---
+
+# Partie 2 : le détail technique
+
+## Sommaire
+
+1. [Architecture](#architecture)
+2. [Stack et choix techniques](#stack-et-choix-techniques)
+3. [Fonctionnement d'un nettoyage](#fonctionnement-dun-nettoyage)
+4. [Sécurité et confidentialité](#sécurité-et-confidentialité)
+5. [Tests et validation](#tests-et-validation)
+6. [Structure du dépôt](#structure-du-dépôt)
+7. [Reproduire le projet](#reproduire-le-projet)
+8. [Limites](#limites)
+9. [Pistes d'amélioration](#pistes-damélioration)
+10. [Documentation](#documentation)
+11. [Contribuer, sécurité et licence](#contribuer-sécurité-et-licence)
+
+## Architecture
+
+```mermaid
+flowchart LR
+    UI[Interface React<br/>5 écrans] -- HTTP + SSE --> API[API FastAPI<br/>127.0.0.1, jeton]
+    CLI[CLI Typer<br/>iuc] --> SVC
+    API --> SVC[Services<br/>aperçu, nettoyage, rapport]
+    SVC --> DB[(SQLite<br/>journal, reprise)]
+    SVC --> PW[Playwright]
+    PW --> CR[Chromium<br/>profil local]
+    CR --> IG[instagram.com]
+```
+
+Un seul navigateur, piloté par Playwright, parle à Instagram ; l’API et la CLI passent par les
+mêmes services.
+
+## Stack et choix techniques
+
+| Outil | Usage | Pourquoi ce choix |
+|---|---|---|
+| **Playwright** (Chromium) | Navigation, lecture de la grille, mode sélection | Profil persistant : la personne se connecte elle-même une fois, la session est reprise ensuite |
+| **FastAPI**, Server-Sent Events | API locale, progression en direct | Schémas typés (OpenAPI) partagés avec le frontend ; flux d’événements simple pour le suivi |
+| **SQLite**, SQLModel | Nettoyages, likes, journal, compteur quotidien | Une base locale sans serveur ; chaque lot est écrit avant le suivant |
+| **Typer** | Ligne de commande `iuc` | Toutes les fonctions sans interface, utiles pour tester et diagnostiquer |
+| **React 19**, TypeScript strict, Vite | Interface web | Client d’API typé depuis le schéma OpenAPI ; écrans chargés à la demande |
+| **Tailwind CSS 4** | Système de design | Tokens (couleurs, typographie, espacements, motion) vérifiés par un test |
+| **pytest, Vitest, Ruff, mypy, Oxlint** | Qualité | Lint, typage strict et tests à chaque modification |
+| **GitHub Actions** | Intégration continue | Python 3.11 et 3.14, Chromium sous Linux, audits des dépendances |
+
+## Fonctionnement d'un nettoyage
+
+| Étape | Rôle | Décisions techniques |
+|---|---|---|
+| Connexion | Fenêtre Chromium dédiée, connexion manuelle | Session reconnue au seul cookie `sessionid` ; aucun champ lu ni rempli |
+| Vérification | Ouverture de la page des likes | Chaque élément attendu est cherché ; s’il manque, le message le nomme |
+| Aperçu | Lecture complète de la grille, filtres | Filtre natif d’Instagram pour les dates et l’ordre ; type et comptes filtrés par IUC. Publications identifiées par le nom de fichier de leur image (aucun lien dans la grille) |
+| Lot | Sélection, « Je n’aime plus », confirmation | Annulation si les cases cochées diffèrent du lot ; seule la fenêtre de confirmation attendue est validée |
+| Contrôle | Rechargement de la page | Un like qui réapparaît passe en échec |
+| Cadence | Pauses aléatoires, limite quotidienne | Entre deux cases, deux défilements et deux lots ; `DAILY_LIMIT` partagé entre nettoyages |
+| Arrêt | Signal d’Instagram ou demande de l’utilisateur | Statut « en pause », reprise sans retraiter |
 
 ## Sécurité et confidentialité
 
-Chaque garantie est appliquée dans le code et **prouvée par des tests** lancés à chaque
-modification (`backend/tests/test_security.py` et `backend/tests/test_cleanup.py`).
+Chaque garantie est appliquée dans le code et **prouvée par des tests**
+([`test_security.py`](backend/tests/test_security.py), [`test_cleanup.py`](backend/tests/test_cleanup.py)).
 
 | Sujet | Garantie | Preuve |
-| --- | --- | --- |
-| Identifiants | Aucun champ de connexion lu ni rempli par le script ; aucun mot de passe en mémoire, en base ou dans les journaux. Chromium n’enregistre aucun identifiant, et les diagnostics masquent toute saisie (aucune capture sur une page de connexion ou une fenêtre de ré-authentification). | Analyse du code (aucune saisie ni lecture de champ), identifiants « témoins » tapés dans une fausse page de connexion puis recherchés dans tout `DATA_DIR` |
-| Données locales | Profil du navigateur, base, rapports, diagnostics et journaux dans `DATA_DIR` uniquement. Aucun appel réseau du backend ; l’interface est bridée par une politique de sécurité du contenu (CSP) qui n’autorise que l’API locale. | Analyse des imports réseau, en-tête CSP vérifié, chemins de stockage vérifiés |
-| Suppression | `iuc logout` (profil du navigateur), `iuc purge` et le bouton « Supprimer mes données locales » (tout effacer) | Tests de la CLI, de l’API et du service de suppression |
-| Cadence | Délais aléatoires entre deux cases cochées, entre deux défilements et entre deux lots ; plafond quotidien configurable (`DAILY_LIMIT`) | Tirages aléatoires et bornes vérifiés, limite quotidienne partagée entre nettoyages |
-| Alertes Instagram | Message de limite, vérification de sécurité, déconnexion forcée : arrêt immédiat, nettoyage « en pause », marche à suivre affichée | Fausse page des likes qui déconnecte, demande une vérification ou affiche « Réessayer plus tard » en plein nettoyage |
-| Reprise | Chaque lot est enregistré en base avant le suivant ; une relance reprend sans retraiter | Interruption, pause, limite puis reprise sur la fausse page |
-| Changement d’interface | Sélecteurs isolés (`backend/app/browser/locators.py`), vérification au démarrage que chaque élément attendu existe, message qui nomme l’élément manquant ; `iuc probe` pour étudier la nouvelle interface | Pages modifiées (bouton absent, vignettes illisibles, bouton renommé) |
-| API locale | Écoute sur 127.0.0.1 uniquement, jeton aléatoire par démarrage, contrôle de l’hôte (DNS rebinding), CORS limité au serveur de développement, en-têtes de sécurité, aucune page dans un cadre | Tests de l’API et de la commande `iuc serve` |
-| Dépendances | Versions figées (`constraints.txt`, `frontend/package-lock.json`), audit avec `pip-audit` et `npm audit` | Test de cohérence des versions figées, audits sans vulnérabilité connue |
-| Journaux | Aucun nom de compte aimé ni secret dans les journaux (cookies, jeton masqués) ; niveau réglable (`LOG_LEVEL`) | Comptes « témoins » recherchés dans le journal après un nettoyage complet |
+|---|---|---|
+| Identifiants | Aucun champ de connexion lu ni rempli ; aucun mot de passe en mémoire, en base ou dans les journaux. Chromium n’enregistre aucun identifiant ; les diagnostics masquent toute saisie | Analyse du code, identifiants « témoins » cherchés dans tout `DATA_DIR` |
+| Données locales | Tout dans `DATA_DIR` ; aucun appel réseau du backend ; CSP de l’interface limitée à l’API locale | Analyse des imports réseau, en-tête CSP, chemins de stockage |
+| Suppression | `iuc logout`, `iuc purge` et le bouton « Supprimer mes données locales » | Tests de la CLI, de l’API et du service |
+| Cadence | Délais aléatoires, plafond quotidien configurable | Tirages et bornes vérifiés |
+| Alertes Instagram | Limite, vérification, déconnexion : arrêt immédiat, en pause, marche à suivre | Fausse page qui déconnecte, vérifie ou limite en plein nettoyage |
+| Reprise | Chaque lot enregistré avant le suivant | Interruption, pause, limite puis reprise |
+| Changement d’interface | Sélecteurs isolés ([`locators.py`](backend/app/browser/locators.py)), vérification au démarrage | Bouton absent, vignettes illisibles, bouton renommé |
+| API locale | 127.0.0.1, jeton par démarrage, contrôle de l’hôte, CORS restreint, en-têtes de sécurité | Tests de l’API et de `iuc serve` |
+| Dépendances | Versions figées ([`constraints.txt`](constraints.txt), `package-lock.json`), audits | `pip-audit` et `npm audit` sans vulnérabilité connue |
+| Journaux | Aucun nom de compte aimé ni secret ; niveau réglable | Comptes « témoins » cherchés dans le journal |
+| Dépôt public | Aucun compte réellement aimé dans les fichiers versionnés | Test de garde sur la base locale |
 
-Les diagnostics (`DATA_DIR/diagnostics`) servent à ajuster IUC quand Instagram change son
-interface. Ils contiennent les noms des comptes que tu as aimés : masque-les avant de les
-partager.
+## Tests et validation
 
-## Installation
+| Niveau | Cible | Outil | Résultat |
+|---|---|---|---|
+| Unitaires | Filtres, limites quotidiennes, pauses aléatoires, machine d’états | pytest | 238 tests serveur passés |
+| Intégration | API et base SQLite, reprise après un arrêt | pytest, httpx | inclus ci-dessus |
+| Automatisation | Navigation et retrait sur une fausse page des likes, réseau coupé | Playwright | inclus ci-dessus |
+| Frontend | Composants, parcours principal, tokens du système de design | Vitest, Testing Library | 45 tests passés |
+| Continu | Lint, typage, tests, audits | GitHub Actions | Python 3.11 et 3.14 |
+| Manuel | Un lot réel sur un compte de test | [Recette](docs/recette.md) | 1 493 likes recensés, lots retirés et vérifiés |
 
-Prérequis : Python 3.11 ou plus, Node.js 22 ou plus.
+La fausse page des likes ([`fake_instagram.py`](backend/tests/fake_instagram.py)) reproduit les
+diagnostics réels : paquets de 18 vignettes, mode sélection, fenêtre de confirmation, filtres.
+
+## Structure du dépôt
+
+```
+├── backend/app/
+│   ├── browser/        Chromium : session, sélecteurs, grille, filtres, mode sélection
+│   ├── services/       Aperçu, nettoyage, rapport, données locales
+│   ├── api/            API locale (FastAPI) et sécurité
+│   ├── core/           Configuration, base, journaux, protection des identifiants
+│   └── cli.py          Commandes iuc
+├── backend/tests/      Tests, dont la fausse version d'Instagram
+├── frontend/           Interface React (Vite, TypeScript, Tailwind)
+├── scripts/demo.py     Démonstration avec des données fictives
+├── docs/               Recette manuelle, page portfolio, images
+├── constraints.txt     Versions figées des dépendances Python
+└── .github/workflows/  Intégration continue
+```
+
+## Reproduire le projet
+
+**Installer** (Python 3.11 ou plus, Node.js 22 ou plus) :
 
 ```bash
 python -m venv .venv
 .venv\Scripts\activate          # Windows ; sous macOS ou Linux : source .venv/bin/activate
 pip install -e ".[dev]" -c constraints.txt
 playwright install chromium
-cd frontend
-npm ci
-npm run build
-cd ..
+cd frontend && npm ci && npm run build && cd ..
 ```
 
-Copie `.env.example` en `.env` pour ajuster les réglages (facultatif).
+**Utiliser** : `iuc serve` ouvre l’interface sur `http://127.0.0.1:8765`. `Ctrl+C` arrête le
+serveur ; un nettoyage en cours passe en pause et pourra reprendre.
 
-## Utilisation
+**Essayer sans compte Instagram** : `python scripts/demo.py` sert l’interface sur
+`http://127.0.0.1:8799`, avec trois nettoyages fictifs dans un dossier séparé.
 
-```bash
-iuc serve
-```
-
-L’interface s’ouvre dans ton navigateur, sur `http://127.0.0.1:8765`. Suis le parcours :
-avertissement, connexion, critères, aperçu, nettoyage, rapport. `Ctrl+C` arrête le serveur ;
-un nettoyage en cours passe en pause et pourra reprendre.
-
-La même chose en ligne de commande :
+<details>
+<summary><b>Commandes de la CLI</b></summary>
 
 | Commande | Rôle |
-| --- | --- |
-| `iuc login` | Ouvre Instagram, attend ta connexion, vérifie la page des likes |
+|---|---|
+| `iuc login` | Ouvre Instagram, attend la connexion, vérifie la page des likes |
 | `iuc preview --start 2021-01-01 --end 2021-12-31 --content reels --exclude-author ami` | Prépare l’aperçu, sans rien retirer |
 | `iuc jobs` | Liste les nettoyages et leur avancement |
 | `iuc exclude 3 --rank 12 --author ami` | Garde des likes (`--restore` pour les remettre) |
-| `iuc run 3 --limit 25` | Lance ou reprend le nettoyage n° 3 (ici, 25 likes au plus) |
+| `iuc run 3 --limit 25` | Lance ou reprend le nettoyage n° 3 |
 | `iuc stop 3` | Arrête définitivement un nettoyage |
 | `iuc report 3` | Bilan et export CSV et JSON |
 | `iuc probe` | Explore la page des likes sans rien retirer (diagnostics) |
 | `iuc logout` / `iuc purge` | Supprime la session Instagram / toutes les données locales |
 
-### Essayer l’interface sans compte Instagram
+</details>
 
-```bash
-python scripts/demo.py
-```
-
-Ouvre `http://127.0.0.1:8799` : trois nettoyages fictifs (terminé, en pause, prêt) dans un
-dossier `demo-data/` séparé. Tes vraies données ne sont jamais touchées.
-
-## Configuration
+<details>
+<summary><b>Configuration (fichier <code>.env</code>, voir <code>.env.example</code>)</b></summary>
 
 | Variable | Défaut | Rôle |
-| --- | --- | --- |
+|---|---|---|
 | `DATA_DIR` | `./data` | Dossier de toutes les données locales |
 | `DAILY_LIMIT` | `150` | Unlikes tentés par jour au maximum, tous nettoyages confondus |
 | `DELAY_MIN`, `DELAY_MAX` | `4`, `12` | Pause aléatoire entre deux lots, en secondes |
@@ -142,81 +262,52 @@ dossier `demo-data/` séparé. Tes vraies données ne sont jamais touchées.
 | `API_PORT` | `8765` | Port de l’API locale (toujours sur 127.0.0.1) |
 | `API_DOCS` | `false` | Page `/docs` de l’API, chargée depuis un CDN : à n’activer qu’en développement |
 
-## Questions fréquentes
+</details>
 
-**Dois-je donner mon mot de passe ?** Non. Tu te connectes toi-même dans la fenêtre Chromium ;
-IUC ne lit aucun champ du formulaire et vérifie seulement que la session est ouverte.
-
-**Mon compte risque-t-il quelque chose ?** Instagram n’autorise pas l’automatisation. IUC limite
-la cadence et s’arrête au moindre signal, mais le risque zéro n’existe pas : commence par un
-compte secondaire.
-
-**Combien de temps faut-il ?** Environ une minute pour vingt-cinq likes. Au-delà de la limite
-quotidienne (150 par défaut), le nettoyage reprend le lendemain là où il s’était arrêté.
-
-**Que se passe-t-il si Instagram me déconnecte ou demande une vérification ?** Le nettoyage
-s’arrête aussitôt et passe en pause. Règle la situation toi-même dans la fenêtre, puis reprends :
-rien n’est retraité.
-
-**Et si Instagram change son interface ?** IUC vérifie au démarrage chaque élément dont il a
-besoin et nomme celui qui manque, sans rien retirer. Les sélecteurs sont réunis dans un seul
-fichier pour faciliter la mise à jour (voir [CONTRIBUTING.md](CONTRIBUTING.md)).
-
-**Où sont mes données ?** Dans `DATA_DIR` (par défaut `./data`), sur ton ordinateur. `iuc purge`
-ou le bouton « Supprimer mes données locales » efface tout.
-
-**IUC est-il lié à Instagram ?** Non, c’est un projet indépendant, sans lien avec Instagram ni
-Meta.
-
-## Développement
+**Vérifier** :
 
 ```bash
-pre-commit install                  # contrôles automatiques avant chaque commit
-pytest                              # backend ; -m "not browser" pour sauter les tests Chromium
+pytest                                                   # -m "not browser" : sans Chromium
 ruff check backend scripts && ruff format --check backend scripts && mypy
-pip-audit -r constraints.txt --no-deps --disable-pip   # vulnérabilités connues
-cd frontend
-npm test && npm run lint && npm run typecheck && npm run format:check
-npm run audit                       # vulnérabilités connues des dépendances npm
-npm run dev                         # interface en développement (API : iuc serve)
-npm run api                         # régénère les types du client après un changement d'API
+pip-audit -r constraints.txt --no-deps --disable-pip
+cd frontend && npm test && npm run lint && npm run typecheck && npm run audit
 ```
 
-### Tests et qualité
+## Limites
 
-| Niveau | Cible | Outil |
-| --- | --- | --- |
-| Unitaires | Filtres, limites quotidiennes, pauses aléatoires, machine d’états d’un nettoyage | pytest |
-| Intégration | API et base SQLite, reprise après un arrêt | pytest, httpx |
-| Automatisation | Navigation, sélection et retrait sur une fausse page des likes, réseau coupé | Playwright |
-| Frontend | Composants et parcours principal | Vitest, Testing Library |
-| Manuel | Un lot réel de quelques dizaines de likes sur un compte de test | [Recette](docs/recette.md) |
+- **Dépendance à l’interface d’Instagram** : une nouvelle version peut renommer un bouton. IUC
+  s’arrête alors sans rien retirer et nomme l’élément manquant ; `iuc probe` aide à l’adapter.
+- **Langue** : seule l’interface française est confirmée ; les libellés anglais restent à vérifier.
+- **Dates** : la grille affiche la date de publication, pas celle du like ; le filtre par période
+  passe par le filtre natif d’Instagram.
+- **Volume** : la limite quotidienne (150 par défaut) étale un gros nettoyage sur plusieurs jours,
+  par prudence.
+- **Risque de compte** : l’automatisation reste contraire aux conditions d’utilisation
+  d’Instagram, quelles que soient les précautions.
 
-Les tests d’automatisation tournent sur une fausse page des likes, sans aucun accès au réseau
-(`backend/tests/fake_instagram.py`) : on ne teste jamais sur le vrai Instagram en continu.
-L’intégration continue (GitHub Actions) lance le lint, le typage, tous les tests et les audits
-à chaque envoi sur `main` ou `dev`, avec Python 3.11 et 3.14.
+## Pistes d'amélioration
 
-Mise à jour des dépendances Python : `pip install -U <paquet>`, tests verts, `pip-audit`, puis
-`pip freeze --exclude-editable` dans `constraints.txt` (en gardant son en-tête).
+- Confirmer et compléter les libellés anglais de l’interface d’Instagram.
+- Importer l’export officiel des données Instagram (`liked_posts.json`) pour préparer l’aperçu
+  sans parcourir la grille.
+- Traduire l’interface d’IUC en anglais (le vocabulaire est déjà centralisé).
+- Publier des exécutables prêts à l’emploi pour Windows et macOS.
 
-## Structure
+## Documentation
 
-```
-backend/app/
-  browser/    Chromium : session, sélecteurs, grille, filtres, mode sélection
-  services/   aperçu, nettoyage, rapport, données locales
-  api/        API locale (FastAPI) et sécurité
-  core/       configuration, base, journaux, protection des identifiants
-  cli.py      commandes `iuc`
-backend/tests/  tests, dont la fausse version d'Instagram
-frontend/       interface React (Vite, TypeScript, Tailwind)
-scripts/        démonstration avec des données fictives
-docs/           recette manuelle, images du README
-```
+| Document | Contenu |
+|---|---|
+| [Recette manuelle](docs/recette.md) | Essai réel pas à pas sur un compte de test |
+| [Page portfolio](docs/portfolio.md) | Problème, réponse, résultat et enseignements |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Installation pour le développement, règles, adaptation à Instagram |
+| [SECURITY.md](SECURITY.md) | Signalement privé d’une vulnérabilité |
 
 ## Contribuer, sécurité et licence
 
 - Contributions : voir [CONTRIBUTING.md](CONTRIBUTING.md).
 - Vulnérabilité : signalement privé, voir [SECURITY.md](SECURITY.md).
 - Licence : [MIT](LICENSE). Instagram est une marque de Meta Platforms, Inc.
+
+---
+
+**Cedric**, Mastère IA & Big Data, ESGI Paris
