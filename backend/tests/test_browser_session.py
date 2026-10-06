@@ -9,7 +9,7 @@ from playwright.async_api import Error as PlaywrightError
 
 from app.browser import locators
 from app.browser.locators import PageKind
-from app.browser.session import BrowserSession, NavigationOutcome
+from app.browser.session import BrowserSession, BrowserStartError, NavigationOutcome
 from tests.fake_instagram import (
     LIKES_PAGE_EN,
     LIKES_PAGE_FR,
@@ -259,3 +259,25 @@ async def test_session_survives_a_restart(tmp_path: Path) -> None:
 
     assert status.logged_in
     assert status.account_id == "777"
+
+
+async def test_falls_back_to_the_next_browser(tmp_path: Path) -> None:
+    """L'application Windows essaie Chrome puis Edge : un navigateur absent est sauté."""
+    async with BrowserSession(
+        tmp_path / "profile",
+        headless=True,
+        extra_args=NO_NETWORK_ARGS,
+        channels=("navigateur-absent", "chromium"),
+    ) as session:
+        assert session.is_open
+
+
+async def test_explains_which_browsers_to_install(tmp_path: Path) -> None:
+    session = BrowserSession(
+        tmp_path / "profile", headless=True, channels=("navigateur-absent", "autre-absent")
+    )
+
+    with pytest.raises(BrowserStartError, match="navigateur-absent, autre-absent"):
+        await session.start()
+
+    assert not session.is_open

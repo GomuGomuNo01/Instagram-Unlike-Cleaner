@@ -8,6 +8,7 @@ services.
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from functools import partial
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -42,7 +43,10 @@ def create_app(
         settings=settings,
         engine=engine,
         token=token or new_token(),
-        browser=BrowserManager(settings, browser_factory or BrowserSession),
+        browser=BrowserManager(
+            settings,
+            browser_factory or partial(BrowserSession, channels=settings.browser_channels),
+        ),
     )
 
     @asynccontextmanager

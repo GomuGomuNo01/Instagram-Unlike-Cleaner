@@ -5,7 +5,7 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-API%20locale-009688?logo=fastapi&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-282%20passés-1BAF7A)
+![Tests](https://img.shields.io/badge/tests-287%20passés-1BAF7A)
 [![CI](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/actions/workflows/ci.yml?query=branch%3Amain)
 
 Un outil **100 % local** qui retire en masse les likes Instagram, après validation de chaque like
@@ -18,6 +18,9 @@ rapport, sur des likes fictifs. Sans installation, sans compte, sans connexion �
 **[Tester la vraie version dans GitHub Codespaces](https://codespaces.new/GomuGomuNo01/Instagram-Unlike-Cleaner?quickstart=1)** : IUC complet, avec ton propre
 compte Instagram, dans une machine temporaire créée sur **ton** compte GitHub. Rien ne passe
 par un serveur du projet ([détails](#tester-la-vraie-version-en-ligne)).
+
+**[Installer IUC sur Windows](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/releases/latest)** : un installeur classique, sans droits
+administrateur ; IUC pilote Chrome ou Edge déjà installés ([détails](#application-windows)).
 
 ![Démonstration du parcours, avec des données fictives](docs/images/demo.gif)
 
@@ -197,7 +200,7 @@ Chaque garantie est appliquée dans le code et **prouvée par des tests**
 
 | Niveau | Cible | Outil | Résultat |
 |---|---|---|---|
-| Unitaires | Filtre d’Instagram, limites quotidiennes, pauses aléatoires, machine d’états, exports | pytest | 234 tests serveur passés |
+| Unitaires | Filtre d’Instagram, limites quotidiennes, pauses aléatoires, machine d’états, exports | pytest | 239 tests serveur passés |
 | Intégration | API et base SQLite, reprise après un arrêt | pytest, httpx | inclus ci-dessus |
 | Automatisation | Navigation et retrait sur une fausse page des likes, réseau coupé | Playwright | inclus ci-dessus |
 | Frontend | Composants, écran des critères, parcours principal, démo en ligne, tokens du système de design | Vitest, Testing Library | 48 tests passés |
@@ -222,11 +225,28 @@ diagnostics réels : paquets de 18 vignettes, mode sélection, fenêtre de confi
 ├── scripts/demo.py     Démonstration avec des données fictives
 ├── docs/               Recette manuelle, page portfolio, images
 ├── .devcontainer/      Vraie version dans GitHub Codespaces (bureau distant, lancement)
+├── packaging/          Application Windows (PyInstaller, installeur Inno Setup)
 ├── constraints.txt     Versions figées des dépendances Python
 └── .github/workflows/  Intégration continue
 ```
 
 ## Reproduire le projet
+
+### Application Windows
+
+Télécharge **IUC-Setup-&lt;version&gt;.exe** dans la [dernière version publiée](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/releases/latest), puis
+lance IUC depuis le menu Démarrer : l’interface s’ouvre dans le navigateur, et la fenêtre de
+console se ferme pour arrêter IUC.
+
+- **Prérequis** : Google Chrome ou Microsoft Edge (`BROWSER_CHANNELS`), plutôt qu’un Chromium
+  embarqué de 150 Mo.
+- **Données** : `%LOCALAPPDATA%\IUC`, gardées à la désinstallation.
+- **Avertissement Windows** : l’installeur n’est pas signé (la signature est payante) ;
+  « Informations complémentaires », puis « Exécuter quand même ».
+- **Fabrication** : PyInstaller et Inno Setup ([`packaging/`](packaging)), par le workflow
+  `windows.yml` qui contrôle le démarrage de l’application avant de publier l’installeur.
+
+### Depuis le code source
 
 **Installer** (Python 3.11 ou plus, Node.js 22 ou plus) :
 
@@ -293,6 +313,7 @@ bureau distant, ouvert dans un autre onglet ; l’écran « Connexion » d’IUC
 | `LOG_LEVEL` | `INFO` | Niveau de détail des journaux |
 | `API_PORT` | `8765` | Port de l’API locale (toujours sur 127.0.0.1) |
 | `API_DOCS` | `false` | Page `/docs` de l’API, chargée depuis un CDN : à n’activer qu’en développement |
+| `BROWSER_CHANNELS` | `["chromium"]` | Navigateurs essayés dans l’ordre : `chromium` (celui de Playwright), `chrome`, `msedge` ; `["chrome", "msedge"]` dans l’application Windows |
 
 </details>
 
@@ -326,7 +347,7 @@ cd frontend && npm test && npm run lint && npm run typecheck && npm run audit
 - Importer l’export officiel des données Instagram (`liked_posts.json`) pour préparer l’aperçu
   sans parcourir la grille.
 - Traduire l’interface d’IUC en anglais (le vocabulaire est déjà centralisé).
-- Publier des exécutables prêts à l’emploi pour Windows et macOS.
+- Publier aussi une application pour macOS ; signer l’installeur Windows.
 
 ## Documentation
 

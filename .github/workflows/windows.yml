@@ -1,0 +1,82 @@
+name: Application Windows
+
+# Construit l'installeur Windows (IUC-Setup-<version>.exe) : PyInstaller, contrôle de
+# démarrage, puis Inno Setup. Sur un tag v*, il est publié dans la Release du tag ; à la
+# demande (workflow_dispatch), il reste téléchargeable comme artefact du workflow.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  installer:
+    name: Installeur Windows
+    runs-on: windows-latest
+    permissions:
+      contents: write # publication de la Release (tags v*)
+    env:
+      # Nom du tag (v1.2.0), ou v0.0.0-dev hors tag ; IUC_VERSION en retire le « v ».
+      TAG_VERSION: ${{ github.ref_type == 'tag' && github.ref_name || 'v0.0.0-dev' }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Version
+        shell: pwsh
+        run: '"IUC_VERSION=$($env:TAG_VERSION.TrimStart(''v''))" >> $env:GITHUB_ENV'
+      - name: Dépendances Python (versions figées)
+        run: pip install -e ".[package]" -c constraints.txt
+      - name: Interface
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+      - name: Application (PyInstaller)
+        run: pyinstaller --noconfirm --distpath build/dist --workpath build/work packaging/IUC.spec
+
+      - name: Contrôle de démarrage
+        shell: pwsh
+        run: |
+          $env:LOCALAPPDATA = Join-Path $env:RUNNER_TEMP "iuc"
+          $app = Start-Process build\dist\IUC\IUC.exe -PassThru -WindowStyle Hidden
+          $ok = $false
+          foreach ($i in 1..30) {
+            Start-Sleep -Seconds 2
+            try {
+              $page = Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8765/ -TimeoutSec 5
+              $ok = $page.StatusCode -eq 200 -and $page.Content -match 'name="iuc-token"'
+              if ($ok) { break }
+            } catch {}
+          }
+          Stop-Process -Id $app.Id -Force -ErrorAction SilentlyContinue
+          if (-not $ok) { throw "IUC.exe n'a pas servi son interface." }
+          "IUC.exe démarre et sert son interface."
+
+      - name: Installeur (Inno Setup)
+        shell: pwsh
+        run: |
+          choco install innosetup --yes --no-progress
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" packaging\iuc.iss
+      - uses: actions/upload-artifact@v7
+        with:
+          name: IUC-Setup-${{ env.IUC_VERSION }}
+          path: build/installer/*.exe
+
+      - name: Release
+        if: github.ref_type == 'tag'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" (Get-Item build\installer\*.exe).FullName `
+            --title "IUC ${{ env.IUC_VERSION }}" --notes-file packaging\release-notes.md

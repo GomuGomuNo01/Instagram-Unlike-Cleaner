@@ -8,6 +8,8 @@ from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+# Navigateurs pilotables : le Chromium de Playwright, ou Chrome et Edge déjà installés.
+BrowserChannel = Literal["chromium", "chrome", "msedge"]
 
 
 class Settings(BaseSettings):
@@ -36,6 +38,9 @@ class Settings(BaseSettings):
     # depuis un serveur tiers (CDN), ce qu'IUC s'interdit. Le schéma reste disponible avec
     # `iuc openapi`.
     api_docs: bool = False
+    # Navigateurs à essayer, dans l'ordre, jusqu'au premier qui s'ouvre. L'application
+    # Windows utilise Chrome ou Edge déjà installés, plutôt que d'embarquer Chromium.
+    browser_channels: list[BrowserChannel] = Field(default=["chromium"], min_length=1)
 
     @field_validator("log_level", mode="before")
     @classmethod

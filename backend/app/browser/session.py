@@ -49,6 +49,13 @@ _THUMBNAIL_SAMPLES_JS = """
 """
 
 
+BROWSER_NAMES = {
+    "chromium": "Chromium (playwright install chromium)",
+    "chrome": "Google Chrome",
+    "msedge": "Microsoft Edge",
+}
+
+
 class BrowserStartError(RuntimeError):
     """Le navigateur n'a pas pu être lancé (profil déjà utilisé, Chromium absent...)."""
 
@@ -133,10 +140,14 @@ class BrowserSession:
         *,
         headless: bool = False,
         extra_args: Sequence[str] = (),
+        channels: Sequence[str] = ("chromium",),
     ) -> None:
         self._profile_dir = profile_dir
         self._headless = headless
         self._extra_args = list(extra_args)
+        # Navigateurs essayés dans l'ordre : « chromium » (celui de Playwright), « chrome »,
+        # « msedge ». Le premier qui s'ouvre est gardé.
+        self._channels = list(channels)
         self._playwright: Playwright | None = None
         self._context: BrowserContext | None = None
         self._page: Page | None = None
@@ -181,24 +192,32 @@ class BrowserSession:
         self._profile_dir.mkdir(parents=True, exist_ok=True)
         disable_credential_saving(self._profile_dir)
         self._playwright = await async_playwright().start()
-        try:
-            self._context = await self._playwright.chromium.launch_persistent_context(
-                self._profile_dir,
-                headless=self._headless,
-                args=self._extra_args,
-                locale="fr-FR",
-                # Taille fixe : la mise en page d'Instagram, et donc les sélecteurs,
-                # change selon la largeur de la fenêtre.
-                viewport={"width": 1280, "height": 900},
-            )
-        except PlaywrightError as exc:
+        failure: PlaywrightError | None = None
+        for channel in self._channels:
+            try:
+                self._context = await self._playwright.chromium.launch_persistent_context(
+                    self._profile_dir,
+                    channel=None if channel == "chromium" else channel,
+                    headless=self._headless,
+                    args=self._extra_args,
+                    locale="fr-FR",
+                    # Taille fixe : la mise en page d'Instagram, et donc les sélecteurs,
+                    # change selon la largeur de la fenêtre.
+                    viewport={"width": 1280, "height": 900},
+                )
+                break
+            except PlaywrightError as exc:
+                logger.info("Navigateur « %s » indisponible", channel)
+                failure = exc
+        if self._context is None:
             await self._playwright.stop()
             self._playwright = None
+            browsers = ", ".join(BROWSER_NAMES.get(channel, channel) for channel in self._channels)
             raise BrowserStartError(
                 "Impossible d'ouvrir le navigateur. Vérifie qu'aucune autre fenêtre IUC n'est "
-                "ouverte et que Chromium est installé (playwright install chromium). "
-                f"Détail : {exc}"
-            ) from exc
+                f"ouverte et qu'un de ces navigateurs est installé : {browsers}. "
+                f"Détail : {failure}"
+            ) from failure
         self._closed_by_user = False
         self._context.on("close", self._on_context_closed)
         pages = self._context.pages

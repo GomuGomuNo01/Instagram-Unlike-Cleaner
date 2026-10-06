@@ -620,7 +620,9 @@ async def _open_likes_page(
     on_likes_page: LikesPageStep,
     explore_changed_layout: bool,
 ) -> NavigationOutcome | None:
-    async with BrowserSession(settings.browser_profile_dir) as session:
+    async with BrowserSession(
+        settings.browser_profile_dir, channels=settings.browser_channels
+    ) as session:
         await session.open_home()
         status = await session.status()
         if not status.logged_in:

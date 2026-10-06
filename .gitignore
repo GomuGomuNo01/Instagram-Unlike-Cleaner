@@ -23,6 +23,9 @@ frontend/node_modules/
 frontend/dist/
 frontend/dist-demo/
 
+# Application Windows (packaging/) : compilation PyInstaller et installeur
+/build/
+
 # Démonstration (scripts/demo.py) et cahiers des charges, hors dépôt
 demo-data/
 docs/**/*.pdf

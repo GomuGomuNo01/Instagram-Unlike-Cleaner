@@ -29,6 +29,10 @@ dev = [
     "pre-commit>=4.0,<5",
     "pip-audit>=2.7,<3",
 ]
+# Application Windows installable (packaging/) : pip install -e ".[package]" -c constraints.txt
+package = [
+    "pyinstaller>=6.16,<7",
+]
 
 [project.scripts]
 iuc = "app.cli:app"
