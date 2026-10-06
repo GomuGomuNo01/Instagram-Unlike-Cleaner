@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react'
 import { Outlet, useLocation, useNavigation } from 'react-router'
 
 import { prefersReducedMotion } from '../lib/motion'
+import { DemoBanner } from './DemoBanner'
 import { Footer } from './Footer'
 import { Header } from './Header'
 import { Loading, ToastProvider } from './ui'
@@ -44,6 +45,7 @@ export function Layout() {
         <RouteProgress />
         <Header />
         <main id="contenu" ref={mainRef} tabIndex={-1} className="flex-1 pt-16 outline-none">
+          {import.meta.env.VITE_DEMO === 'true' && <DemoBanner />}
           <Outlet />
         </main>
         <Footer />

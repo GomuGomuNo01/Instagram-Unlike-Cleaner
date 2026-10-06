@@ -39,7 +39,10 @@ Définition de « terminé » :
 - aucun secret ni donnée personnelle dans le dépôt : jamais de vrai nom de compte, de cookie,
   de capture ou de diagnostic issu d’un vrai compte (utilise `scripts/demo.py` ou les fausses
   pages de `backend/tests/fake_instagram.py`) ;
-- documentation mise à jour.
+- documentation mise à jour ;
+- démo en ligne alignée sur l’API : une route ou un champ ajouté au backend se reproduit dans
+  la fausse API de `frontend/src/demo/` (vérifier avec `npm run build:demo` puis
+  `npm run preview:demo`).
 
 ## Quand Instagram change son interface
 

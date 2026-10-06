@@ -14,7 +14,7 @@ export function Logo() {
       className="group inline-flex min-h-11 items-center gap-3 rounded-full font-semibold text-fg"
     >
       <img
-        src="/favicon.svg"
+        src={`${import.meta.env.BASE_URL}favicon.svg`}
         alt=""
         width={32}
         height={32}

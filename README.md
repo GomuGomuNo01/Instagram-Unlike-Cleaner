@@ -5,12 +5,15 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-API%20locale-009688?logo=fastapi&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-266%20passés-1BAF7A)
+![Tests](https://img.shields.io/badge/tests-273%20passés-1BAF7A)
 [![CI](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/actions/workflows/ci.yml?query=branch%3Amain)
 
 Un outil **100 % local** qui retire en masse les likes Instagram, après validation de chaque like
 ciblé, **sans jamais voir le mot de passe** : du besoin de l’utilisateur jusqu’à l’interface web,
 la ligne de commande et les preuves de sécurité.
+
+**[▶ Essayer la démo en ligne](https://gomugomuno01.github.io/Instagram-Unlike-Cleaner/)** : la vraie interface d’IUC, de la connexion au
+rapport, sur des likes fictifs. Sans installation, sans compte, sans connexion à Instagram.
 
 ![Démonstration du parcours, avec des données fictives](docs/images/demo.gif)
 
@@ -193,7 +196,7 @@ Chaque garantie est appliquée dans le code et **prouvée par des tests**
 | Unitaires | Filtre d’Instagram, limites quotidiennes, pauses aléatoires, machine d’états, exports | pytest | 227 tests serveur passés |
 | Intégration | API et base SQLite, reprise après un arrêt | pytest, httpx | inclus ci-dessus |
 | Automatisation | Navigation et retrait sur une fausse page des likes, réseau coupé | Playwright | inclus ci-dessus |
-| Frontend | Composants, écran des critères, parcours principal, tokens du système de design | Vitest, Testing Library | 39 tests passés |
+| Frontend | Composants, écran des critères, parcours principal, démo en ligne, tokens du système de design | Vitest, Testing Library | 46 tests passés |
 | Continu | Lint, typage, tests, audits | GitHub Actions | Python 3.11 et 3.14 |
 | Manuel | Un lot réel sur un compte de test | [Recette](docs/recette.md) | 1 493 likes recensés, lots retirés et vérifiés |
 
@@ -211,6 +214,7 @@ diagnostics réels : paquets de 18 vignettes, mode sélection, fenêtre de confi
 │   └── cli.py          Commandes iuc
 ├── backend/tests/      Tests, dont la fausse version d'Instagram
 ├── frontend/           Interface React (Vite, TypeScript, Tailwind)
+│   └── src/demo/       Fausse API de la démo en ligne (likes fictifs, dans le navigateur)
 ├── scripts/demo.py     Démonstration avec des données fictives
 ├── docs/               Recette manuelle, page portfolio, images
 ├── constraints.txt     Versions figées des dépendances Python
@@ -232,7 +236,11 @@ cd frontend && npm ci && npm run build && cd ..
 **Utiliser** : `iuc serve` ouvre l’interface sur `http://127.0.0.1:8765`. `Ctrl+C` arrête le
 serveur ; un nettoyage en cours passe en pause et pourra reprendre.
 
-**Essayer sans compte Instagram** : `python scripts/demo.py` sert l’interface sur
+**Essayer sans rien installer** : la [démo en ligne](https://gomugomuno01.github.io/Instagram-Unlike-Cleaner/) fait tourner la vraie interface
+sur une fausse API, dans le navigateur ; `npm run build:demo` la compile, et le workflow
+`demo.yml` la publie sur GitHub Pages à chaque mise à jour de `main`.
+
+**Essayer en local sans compte Instagram** : `python scripts/demo.py` sert l’interface sur
 `http://127.0.0.1:8799`, avec trois nettoyages fictifs dans un dossier séparé.
 
 <details>
