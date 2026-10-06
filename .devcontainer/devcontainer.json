@@ -11,6 +11,8 @@
     // Accès `gh codespace ssh` (tunnel authentifié de GitHub), pour le diagnostic.
     "ghcr.io/devcontainers/features/sshd:1": {}
   },
+  // Bureau assez grand pour la fenêtre Chromium entière (noVNC la met à l'échelle de l'onglet).
+  "containerEnv": { "VNC_RESOLUTION": "1600x1000x16" },
   "hostRequirements": { "cpus": 2, "memory": "8gb" },
   "postCreateCommand": "bash .devcontainer/setup.sh",
   "postStartCommand": "bash .devcontainer/start.sh",
