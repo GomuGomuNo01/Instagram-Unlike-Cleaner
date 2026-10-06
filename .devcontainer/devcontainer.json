@@ -7,7 +7,9 @@
   "build": { "dockerfile": "Dockerfile" },
   "features": {
     "ghcr.io/devcontainers/features/node:1": { "version": "22" },
-    "ghcr.io/devcontainers/features/desktop-lite:1": { "password": "noPassword" }
+    "ghcr.io/devcontainers/features/desktop-lite:1": { "password": "noPassword" },
+    // Accès `gh codespace ssh` (tunnel authentifié de GitHub), pour le diagnostic.
+    "ghcr.io/devcontainers/features/sshd:1": {}
   },
   "hostRequirements": { "cpus": 2, "memory": "8gb" },
   "postCreateCommand": "bash .devcontainer/setup.sh",
