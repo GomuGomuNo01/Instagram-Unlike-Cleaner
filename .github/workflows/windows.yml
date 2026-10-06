@@ -1,8 +1,9 @@
 name: Application Windows
 
-# Construit l'application Windows en deux formats : l'installeur (IUC-Setup-<version>.exe)
-# et la version portable (IUC-<version>-portable.zip, sans installation). PyInstaller,
-# contrôle de démarrage, puis Inno Setup.
+# Construit l'application Windows en deux formats : l'installeur (IUC-Setup.exe) et la
+# version portable (IUC-portable.zip, sans installation). Noms stables : le README pointe
+# vers releases/latest/download/<fichier> ; la version figure dans le titre de la Release.
+# Étapes : PyInstaller, contrôle de démarrage, puis Inno Setup.
 # - Tag v* : publication dans une nouvelle Release.
 # - À la demande, avec release_tag : ajout ou remplacement des fichiers d'une Release existante.
 # - À la demande, sans release_tag : fichiers téléchargeables comme artefact du workflow.
@@ -80,7 +81,7 @@ jobs:
         run: |
           Copy-Item packaging\LISEZMOI-portable.txt build\dist\IUC\LISEZMOI.txt
           Copy-Item LICENSE build\dist\IUC\LICENSE.txt
-          Compress-Archive -Path build\dist\IUC -DestinationPath "build\installer\IUC-$env:IUC_VERSION-portable.zip"
+          Compress-Archive -Path build\dist\IUC -DestinationPath build\installer\IUC-portable.zip
       - uses: actions/upload-artifact@v7
         with:
           name: IUC-${{ env.IUC_VERSION }}-windows

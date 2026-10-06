@@ -22,7 +22,8 @@ DefaultGroupName=IUC
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
 OutputDir=..\build\installer
-OutputBaseFilename=IUC-Setup-{#AppVersion}
+; Nom stable : le README pointe vers releases/latest/download/IUC-Setup.exe.
+OutputBaseFilename=IUC-Setup
 SetupIconFile=iuc.ico
 UninstallDisplayIcon={app}\IUC.exe
 LicenseFile=..\LICENSE

@@ -2,9 +2,9 @@
 
 Deux formats, le même programme :
 
-- **IUC-Setup-&lt;version&gt;.exe** : installeur classique, sans droit administrateur. IUC
+- **IUC-Setup.exe** : installeur classique, sans droit administrateur. IUC
   apparaît dans le menu Démarrer et se désinstalle comme une application Windows.
-- **IUC-&lt;version&gt;-portable.zip** : sans installation. Décompresse le dossier où tu veux,
+- **IUC-portable.zip** : sans installation. Décompresse le dossier où tu veux,
   puis double-clique sur `IUC.exe`. Pour l’enlever, supprime le dossier.
 
 Au premier lancement, Windows peut afficher « Windows a protégé votre ordinateur » : IUC
