@@ -19,8 +19,9 @@ rapport, sur des likes fictifs. Sans installation, sans compte, sans connexion �
 compte Instagram, dans une machine temporaire créée sur **ton** compte GitHub. Rien ne passe
 par un serveur du projet ([détails](#tester-la-vraie-version-en-ligne)).
 
-**[Installer IUC sur Windows](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/releases/latest)** : un installeur classique, sans droits
-administrateur ; IUC pilote Chrome ou Edge déjà installés ([détails](#application-windows)).
+**[Installer IUC sur Windows](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/releases/latest)** : un installeur classique, ou une
+version portable à lancer sans installation ; IUC pilote Chrome ou Edge déjà installés
+([détails](#application-windows)).
 
 ![Démonstration du parcours, avec des données fictives](docs/images/demo.gif)
 
@@ -234,17 +235,22 @@ diagnostics réels : paquets de 18 vignettes, mode sélection, fenêtre de confi
 
 ### Application Windows
 
-Télécharge **IUC-Setup-&lt;version&gt;.exe** dans la [dernière version publiée](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/releases/latest), puis
-lance IUC depuis le menu Démarrer : l’interface s’ouvre dans le navigateur, et la fenêtre de
-console se ferme pour arrêter IUC.
+Dans la [dernière version publiée](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/releases/latest), deux formats du même programme :
+
+- **IUC-Setup-&lt;version&gt;.exe** : installeur, sans droits administrateur ; IUC se lance
+  depuis le menu Démarrer et se désinstalle comme une application Windows.
+- **IUC-&lt;version&gt;-portable.zip** : sans installation ; décompresser, puis double-cliquer
+  sur `IUC.exe`. Supprimer le dossier l’enlève.
+
+L’interface s’ouvre dans le navigateur ; fermer la fenêtre de console arrête IUC.
 
 - **Prérequis** : Google Chrome ou Microsoft Edge (`BROWSER_CHANNELS`), plutôt qu’un Chromium
   embarqué de 150 Mo.
 - **Données** : `%LOCALAPPDATA%\IUC`, gardées à la désinstallation.
-- **Avertissement Windows** : l’installeur n’est pas signé (la signature est payante) ;
+- **Avertissement Windows** : IUC n’est pas signé (la signature est payante) ;
   « Informations complémentaires », puis « Exécuter quand même ».
 - **Fabrication** : PyInstaller et Inno Setup ([`packaging/`](packaging)), par le workflow
-  `windows.yml` qui contrôle le démarrage de l’application avant de publier l’installeur.
+  `windows.yml` qui contrôle le démarrage de l’application avant de publier les deux formats.
 
 ### Depuis le code source
 
