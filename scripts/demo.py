@@ -23,7 +23,7 @@ from sqlmodel import Session  # noqa: E402
 from app.core.config import Settings  # noqa: E402
 from app.core.db import init_db, make_engine  # noqa: E402
 from app.main import create_app  # noqa: E402
-from app.models.schemas import CleanupFilters  # noqa: E402
+from app.models.schemas import CleanupFilters, SortOrder  # noqa: E402
 from app.models.tables import (  # noqa: E402
     DailyCounter,
     EventLog,
@@ -152,7 +152,7 @@ def seed(settings: Settings) -> None:
         paused = add_job(
             db,
             rng,
-            filters=CleanupFilters(content="reels", exclude_authors=["ami_proche"]),
+            filters=CleanupFilters(sort=SortOrder.OLDEST_FIRST, end_date=date(2020, 12, 31)),
             status=JobStatus.PAUSED,
             targeted=342,
             created=now - timedelta(hours=5),
@@ -161,7 +161,7 @@ def seed(settings: Settings) -> None:
         add_job(
             db,
             rng,
-            filters=CleanupFilters(include_authors=["page_memes", "compte_humour"]),
+            filters=CleanupFilters(start_date=date(2023, 6, 1)),
             status=JobStatus.READY,
             targeted=64,
             created=now - timedelta(minutes=20),

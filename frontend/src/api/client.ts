@@ -22,8 +22,9 @@ const withToken: Middleware = {
   },
 }
 
-/** Client typé : chemins, paramètres et réponses viennent du schéma OpenAPI. */
-export const api = createClient<paths>({ baseUrl: '' })
+/** Client typé : chemins, paramètres et réponses viennent du schéma OpenAPI. L'API est servie
+ * par la même origine que la page (ou relayée par le serveur de développement). */
+export const api = createClient<paths>({ baseUrl: globalThis.location?.origin ?? '' })
 api.use(withToken)
 
 interface FetchResult<T> {

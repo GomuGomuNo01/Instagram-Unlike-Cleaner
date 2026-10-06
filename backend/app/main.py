@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import authors, jobs, session
+from app.api import jobs, session
 from app.api.security import TOKEN_HEADER, SecurityHeadersMiddleware, new_token
 from app.api.state import ApiConflict, ApiState, BrowserFactory, BrowserManager
 from app.browser.session import BrowserSession
@@ -81,7 +81,6 @@ def create_app(
 
     app.include_router(session.router)
     app.include_router(jobs.router)
-    app.include_router(authors.router)
     # En dernier : toute autre adresse renvoie l'interface (application à page unique).
     mount_frontend(app, settings.frontend_dist, state.token)
     return app

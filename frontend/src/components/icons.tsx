@@ -171,14 +171,6 @@ export const SlidersIcon = (props: IconProps) => (
   </Icon>
 )
 
-export const UsersIcon = (props: IconProps) => (
-  <Icon {...props}>
-    <circle cx="9" cy="8" r="3.5" />
-    <path d="M2.5 20a6.5 6.5 0 0 1 13 0" />
-    <path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 20a6.5 6.5 0 0 0-3-5.5" />
-  </Icon>
-)
-
 export const ActivityIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d="M3 12h4l3-8 4 16 3-8h4" />

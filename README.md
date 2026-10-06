@@ -5,7 +5,7 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-API%20locale-009688?logo=fastapi&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-283%20passés-1BAF7A)
+![Tests](https://img.shields.io/badge/tests-266%20passés-1BAF7A)
 [![CI](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/GomuGomuNo01/Instagram-Unlike-Cleaner/actions/workflows/ci.yml?query=branch%3Amain)
 
 Un outil **100 % local** qui retire en masse les likes Instagram, après validation de chaque like
@@ -49,9 +49,10 @@ serveur tiers : on échange un problème de confidentialité contre un autre.
 | 4. Rendre l’outil utilisable | Une interface web en cinq étapes (connexion, critères, aperçu, suivi, rapport) et une ligne de commande |
 | 5. Prouver la sécurité | Des tests qui vérifient chaque garantie, une intégration continue et des audits de dépendances |
 
-**Le principe clé : rien n’est retiré sans validation.** IUC liste d’abord chaque like ciblé
-(période, type de contenu, comptes à cibler ou à protéger) ; la personne décoche ce qu’elle veut
-garder, puis lance le nettoyage.
+**Le principe clé : rien n’est retiré sans validation.** Les likes sont ciblés avec le filtre
+d’Instagram, exactement celui de sa version web : tri, date de début et date de fin du like. IUC
+n’ajoute aucun critère de son cru. Chaque like ciblé est ensuite listé avec son compte et son
+type ; la personne décoche ce qu’elle veut garder, puis lance le nettoyage.
 
 ## Ce que montrent les essais
 
@@ -72,9 +73,9 @@ protection disparaît.
 « Réessayer plus tard » ou interface modifiée : le nettoyage s’arrête aussitôt, passe en pause et
 indique la marche à suivre.
 
-| Critères et liste de tes comptes | Aperçu à cocher |
+| Le filtre d’Instagram, tel quel | Aperçu à cocher |
 |---|---|
-| ![Critères du nettoyage](docs/images/criteres.png) | ![Aperçu du nettoyage](docs/images/apercu.png) |
+| ![Critères : trier par, date de début, date de fin](docs/images/criteres.png) | ![Aperçu du nettoyage](docs/images/apercu.png) |
 | **Suivi en direct** | **Rapport final** |
 | ![Suivi d'un nettoyage en pause](docs/images/suivi.png) | ![Rapport d'un nettoyage terminé](docs/images/rapport.png) |
 
@@ -102,8 +103,8 @@ indique la marche à suivre.
 ## Les limites, en toute transparence
 
 L’outil dépend de l’interface web d’Instagram, qui peut changer ; seule l’interface française est
-confirmée ; Instagram n’indique pas la date des likes dans la grille, seulement celle des
-publications. Détail en [partie 2](#limites).
+confirmée ; le ciblage se limite au filtre d’Instagram (tri et dates du like), sans critère par
+compte ni par type. Détail en [partie 2](#limites).
 
 ---
 
@@ -158,11 +159,13 @@ mêmes services.
 |---|---|---|
 | Connexion | Fenêtre Chromium dédiée, connexion manuelle | Session reconnue au seul cookie `sessionid` ; aucun champ lu ni rempli |
 | Vérification | Ouverture de la page des likes | Chaque élément attendu est cherché ; s’il manque, le message le nomme |
-| Aperçu | Lecture complète de la grille, filtres | Filtre natif d’Instagram pour les dates et l’ordre ; type et comptes filtrés par IUC. Publications identifiées par le nom de fichier de leur image (aucun lien dans la grille) |
+| Critères | Filtre d’Instagram, et lui seul | Tri, date de début et date de fin : IUC remplit le panneau « Trier et filtrer » de la page des likes. L’API refuse tout autre critère plutôt que de l’ignorer |
+| Aperçu | Lecture complète de la grille filtrée | Chaque vignette est enregistrée avec son compte et son type, pour décider en connaissance de cause ; publications identifiées par le nom de fichier de leur image (aucun lien dans la grille) |
 | Lot | Sélection, « Je n’aime plus », confirmation | Annulation si les cases cochées diffèrent du lot ; seule la fenêtre de confirmation attendue est validée |
 | Contrôle | Rechargement de la page | Un like qui réapparaît passe en échec |
 | Cadence | Pauses aléatoires, limite quotidienne | Entre deux cases, deux défilements et deux lots ; `DAILY_LIMIT` partagé entre nettoyages |
 | Arrêt | Signal d’Instagram ou demande de l’utilisateur | Statut « en pause », reprise sans retraiter |
+| Rapport | Bilan, export CSV et JSON | CSV prêt pour Excel (« ; », UTF-8 avec BOM) ; date et heure du retrait en deux colonnes, lisibles sans élargir la colonne |
 
 ## Sécurité et confidentialité
 
@@ -187,10 +190,10 @@ Chaque garantie est appliquée dans le code et **prouvée par des tests**
 
 | Niveau | Cible | Outil | Résultat |
 |---|---|---|---|
-| Unitaires | Filtres, limites quotidiennes, pauses aléatoires, machine d’états | pytest | 238 tests serveur passés |
+| Unitaires | Filtre d’Instagram, limites quotidiennes, pauses aléatoires, machine d’états, exports | pytest | 227 tests serveur passés |
 | Intégration | API et base SQLite, reprise après un arrêt | pytest, httpx | inclus ci-dessus |
 | Automatisation | Navigation et retrait sur une fausse page des likes, réseau coupé | Playwright | inclus ci-dessus |
-| Frontend | Composants, parcours principal, tokens du système de design | Vitest, Testing Library | 45 tests passés |
+| Frontend | Composants, écran des critères, parcours principal, tokens du système de design | Vitest, Testing Library | 39 tests passés |
 | Continu | Lint, typage, tests, audits | GitHub Actions | Python 3.11 et 3.14 |
 | Manuel | Un lot réel sur un compte de test | [Recette](docs/recette.md) | 1 493 likes recensés, lots retirés et vérifiés |
 
@@ -238,9 +241,9 @@ serveur ; un nettoyage en cours passe en pause et pourra reprendre.
 | Commande | Rôle |
 |---|---|
 | `iuc login` | Ouvre Instagram, attend la connexion, vérifie la page des likes |
-| `iuc preview --start 2021-01-01 --end 2021-12-31 --content reels --exclude-author ami` | Prépare l’aperçu, sans rien retirer |
+| `iuc preview --start 2021-01-01 --end 2021-12-31 --oldest-first` | Prépare l’aperçu avec le filtre d’Instagram, sans rien retirer |
 | `iuc jobs` | Liste les nettoyages et leur avancement |
-| `iuc exclude 3 --rank 12 --author ami` | Garde des likes (`--restore` pour les remettre) |
+| `iuc exclude 3 --rank 12 --author ami` | Garde des likes de l’aperçu, par rang ou par compte (`--restore` pour les remettre) |
 | `iuc run 3 --limit 25` | Lance ou reprend le nettoyage n° 3 |
 | `iuc stop 3` | Arrête définitivement un nettoyage |
 | `iuc report 3` | Bilan et export CSV et JSON |
@@ -278,8 +281,11 @@ cd frontend && npm test && npm run lint && npm run typecheck && npm run audit
 - **Dépendance à l’interface d’Instagram** : une nouvelle version peut renommer un bouton. IUC
   s’arrête alors sans rien retirer et nomme l’élément manquant ; `iuc probe` aide à l’adapter.
 - **Langue** : seule l’interface française est confirmée ; les libellés anglais restent à vérifier.
-- **Dates** : la grille affiche la date de publication, pas celle du like ; le filtre par période
-  passe par le filtre natif d’Instagram.
+- **Ciblage limité au filtre d’Instagram** : sa version web ne filtre que par tri et par dates du
+  like. Pas de critère par compte ni par type de contenu : un like à garder se décoche dans
+  l’aperçu.
+- **Dates** : la grille affiche la date de publication, pas celle du like ; seul le filtre
+  d’Instagram connaît la date du like.
 - **Volume** : la limite quotidienne (150 par défaut) étale un gros nettoyage sur plusieurs jours,
   par prudence.
 - **Risque de compte** : l’automatisation reste contraire aux conditions d’utilisation

@@ -20,14 +20,14 @@ const chapters: Chapter[] = [
     screen: { title: 'IUC · Connexion', Mock: MockLogin },
   },
   {
-    title: 'Choisis tes critères',
-    text: 'Période du like, type de contenu, comptes à cibler ou à protéger : la liste de tes comptes est à portée de clic.',
-    points: ['Filtres combinables', 'Comptes classés par nombre de likes'],
+    title: 'Règle le filtre d’Instagram',
+    text: 'Les réglages de son panneau « Trier et filtrer » : tri, date de début et date de fin du like. IUC les applique pour toi sur ta page des likes.',
+    points: ['Les mêmes réglages qu’Instagram', 'Tout l’historique si tu laisses les dates vides'],
     screen: { title: 'IUC · Critères', Mock: MockCriteria },
   },
   {
     title: 'Vérifie l’aperçu',
-    text: 'Chaque like ciblé est listé. Tu décoches ceux que tu veux garder : rien n’est retiré sans ton accord.',
+    text: 'Chaque like ciblé est listé avec son compte et son type. Tu décoches ceux que tu veux garder : rien n’est retiré sans ton accord.',
     points: ['Tout cocher ou tout décocher', 'Premier essai sur quelques likes possible'],
     screen: { title: 'IUC · Aperçu', Mock: () => <MockPreview rows={4} /> },
   },

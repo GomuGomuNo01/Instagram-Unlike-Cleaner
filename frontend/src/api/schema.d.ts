@@ -274,76 +274,36 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/authors": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Authors
-         * @description Comptes dont tu as aimé des publications, d'après tes aperçus déjà collectés (ceux du
-         *     compte connecté s'il est connu), du plus fréquent au moins fréquent. Liste vide avant le
-         *     premier aperçu.
-         */
-        get: operations["get_authors_api_authors_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** AuthorOut */
-        AuthorOut: {
-            /** Author */
-            author: string;
-            /**
-             * Likes
-             * @description Likes encore en place, d'après les aperçus collectés.
-             */
-            likes: number;
-        };
         /**
          * CleanupFilters
-         * @description Critères d'un nettoyage.
+         * @description Critères d'un nettoyage : le filtre d'Instagram, tel que le propose Instagram web dans
+         *     le panneau « Trier et filtrer » de la page des likes (tri, date de début et date de fin
+         *     du like). IUC applique ces critères en remplissant ce panneau ; il n'en ajoute aucun.
          *
-         *     Le tri et les dates sont appliqués par Instagram, avec le filtre de la page des likes.
-         *     Le type et les auteurs sont appliqués par IUC sur les vignettes collectées, car la
-         *     version web d'Instagram ne propose pas ces filtres. Quand un critère ne peut pas être
-         *     vérifié pour un like (auteur ou type illisible), le like est gardé.
+         *     Les champs inconnus sont ignorés : les nettoyages enregistrés avant la refonte du
+         *     filtrage (type de contenu, comptes) restent lisibles.
          */
         CleanupFilters: {
-            /** @default newest_first */
+            /**
+             * @description « Trier par ».
+             * @default newest_first
+             */
             sort: components["schemas"]["SortOrder"];
-            /** Start Date */
+            /**
+             * Start Date
+             * @description Date de début, date du like (vide : sans limite).
+             */
             start_date?: string | null;
-            /** End Date */
+            /**
+             * End Date
+             * @description Date de fin, date du like (vide : aujourd'hui).
+             */
             end_date?: string | null;
-            /** @default all */
-            content: components["schemas"]["ContentFilter"];
-            /**
-             * Include Authors
-             * @default []
-             */
-            include_authors: string[];
-            /**
-             * Exclude Authors
-             * @default []
-             */
-            exclude_authors: string[];
         };
-        /**
-         * ContentFilter
-         * @enum {string}
-         */
-        ContentFilter: "all" | "posts" | "reels";
         /** DeletedOut */
         DeletedOut: {
             /** Deleted */
@@ -416,26 +376,24 @@ export interface components {
         /**
          * JobCreate
          * @description Critères du nettoyage, et limite facultative de vignettes à lire (pour un essai).
+         *     Un champ inconnu est refusé, pour qu'un ancien critère ne soit jamais ignoré en silence.
          */
         JobCreate: {
-            /** @default newest_first */
+            /**
+             * @description « Trier par ».
+             * @default newest_first
+             */
             sort: components["schemas"]["SortOrder"];
-            /** Start Date */
+            /**
+             * Start Date
+             * @description Date de début, date du like (vide : sans limite).
+             */
             start_date?: string | null;
-            /** End Date */
+            /**
+             * End Date
+             * @description Date de fin, date du like (vide : aujourd'hui).
+             */
             end_date?: string | null;
-            /** @default all */
-            content: components["schemas"]["ContentFilter"];
-            /**
-             * Include Authors
-             * @default []
-             */
-            include_authors: string[];
-            /**
-             * Exclude Authors
-             * @default []
-             */
-            exclude_authors: string[];
             /** Max Scanned */
             max_scanned?: number | null;
         };
@@ -995,35 +953,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_authors_api_authors_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AuthorOut"][];
                 };
             };
             /** @description Validation Error */

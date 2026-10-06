@@ -1,14 +1,14 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 
 import { api, ApiError, errorMessage, unwrap } from '../api/client'
-import type { Author, ContentFilter, SortOrder } from '../api/types'
-import { AuthorsPicker } from '../components/AuthorsPicker'
+import type { SortOrder } from '../api/types'
 import { FlowSteps } from '../components/FlowSteps'
 import { AppPage } from '../components/Layout'
-import { ArrowRightIcon } from '../components/icons'
+import { ArrowRightIcon, InfoIcon } from '../components/icons'
 import {
   Alert,
+  Badge,
   Button,
   Card,
   ChoiceGroup,
@@ -17,7 +17,7 @@ import {
   Switch,
   TextLink,
 } from '../components/ui'
-import { contentFilterLabels, sortOrderLabels } from '../i18n/fr'
+import { sortOrderLabels } from '../i18n/fr'
 import {
   buildJobRequest,
   emptyFilters,
@@ -27,8 +27,8 @@ import {
   type FiltersForm,
 } from '../lib/filters'
 
-const FIELD_ORDER: (keyof FiltersForm)[] = ['startDate', 'endDate', 'excludeAuthors', 'maxScanned']
-const FIELD_IDS: Partial<Record<keyof FiltersForm, string>> = {
+const FIELD_ORDER: (keyof FiltersForm)[] = ['startDate', 'endDate', 'maxScanned']
+const FIELD_IDS: Record<string, string> = {
   startDate: 'date-debut',
   endDate: 'date-fin',
   maxScanned: 'maximum',
@@ -38,13 +38,10 @@ const sortOptions = (Object.keys(sortOrderLabels) as SortOrder[]).map((value) =>
   value,
   label: sortOrderLabels[value],
 }))
-const contentOptions = (Object.keys(contentFilterLabels) as ContentFilter[]).map((value) => ({
-  value,
-  label: contentFilterLabels[value],
-}))
 
-/** Critères du nettoyage. La période et l'ordre passent par le filtre d'Instagram ; le type
- * et les comptes sont filtrés par IUC (la version web d'Instagram ne les propose pas). */
+/** Critères du nettoyage : le filtre d'Instagram, identique à son panneau « Trier et
+ * filtrer » (tri, date de début, date de fin du like). C'est le seul filtre qu'Instagram
+ * web propose, et IUC n'en ajoute aucun : le tri fin se fait ensuite dans l'aperçu. */
 export function FiltersPage() {
   const navigate = useNavigate()
   const [form, setForm] = useState<FiltersForm>(emptyFilters)
@@ -53,28 +50,7 @@ export function FiltersPage() {
   const [serverError, setServerError] = useState<string | null>(null)
   const [needsLogin, setNeedsLogin] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [authors, setAuthors] = useState<Author[]>([])
-  const [authorsLoading, setAuthorsLoading] = useState(true)
   const today = localToday()
-
-  useEffect(() => {
-    let active = true
-    unwrap(api.GET('/api/authors'))
-      .then(
-        (loaded) => {
-          if (active) setAuthors(loaded)
-        },
-        () => {
-          // Liste facultative : sans elle, la saisie libre reste possible.
-        },
-      )
-      .finally(() => {
-        if (active) setAuthorsLoading(false)
-      })
-    return () => {
-      active = false
-    }
-  }, [])
 
   const update = <K extends keyof FiltersForm>(key: K, value: FiltersForm[K]) => {
     setForm((previous) => ({ ...previous, [key]: value }))
@@ -83,8 +59,8 @@ export function FiltersPage() {
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
-    // Le nombre saisi est conservé même si l'essai est désactivé, mais n'est envoyé qu'avec.
-    const sent = trial ? form : { ...form, maxScanned: '' }
+    // Le nombre saisi est conservé quand l'essai est désactivé, mais n'est envoyé qu'avec lui.
+    const sent: FiltersForm = { ...form, maxScanned: trial ? form.maxScanned : '' }
     const problems = validateFilters(sent, today)
     setErrors(problems)
     setServerError(null)
@@ -112,88 +88,60 @@ export function FiltersPage() {
       <FlowSteps current={2} />
       <PageHeader
         title="Choisis les likes à cibler"
-        description="Rien n’est retiré à cette étape : IUC prépare d’abord un aperçu que tu pourras vérifier."
+        description="Les mêmes réglages que sur Instagram. Rien n’est retiré à cette étape : IUC prépare d’abord un aperçu que tu pourras vérifier."
       />
       <form onSubmit={submit} noValidate className="space-y-4">
         <Card padding="lg">
-          <Section
-            title="Période"
-            help="Date à laquelle tu as aimé la publication. Laisse vide pour tout l’historique."
-          >
-            <div className="grid gap-6 sm:grid-cols-2">
-              <Field id="date-debut" label="Du" error={errors.startDate}>
-                {(aria) => (
-                  <input
-                    {...aria}
-                    type="date"
-                    max={today}
-                    value={form.startDate}
-                    onChange={(event) => update('startDate', event.target.value)}
-                    className="input"
-                  />
-                )}
-              </Field>
-              <Field id="date-fin" label="Au" error={errors.endDate}>
-                {(aria) => (
-                  <input
-                    {...aria}
-                    type="date"
-                    max={today}
-                    value={form.endDate}
-                    onChange={(event) => update('endDate', event.target.value)}
-                    className="input"
-                  />
-                )}
-              </Field>
-            </div>
-            <div className="mt-6">
-              <ChoiceGroup
-                legend="Ordre de parcours"
-                name="ordre"
-                options={sortOptions}
-                value={form.sort}
-                onChange={(sort) => update('sort', sort)}
-              />
-            </div>
-          </Section>
-        </Card>
-
-        <Card padding="lg">
-          <Section
-            title="Contenus et comptes"
-            help="Un like dont le type ou l’auteur est illisible est toujours gardé."
-          >
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-h3 text-fg">Trier et filtrer</h2>
+            <Badge tone="info">Filtre d’Instagram</Badge>
+          </div>
+          <p className="mt-1 text-small text-fg-muted">
+            IUC remplit pour toi ce panneau de ta page des likes. Les dates sont celles du like ;
+            laisse-les vides pour tout l’historique.
+          </p>
+          <div className="mt-6">
             <ChoiceGroup
-              legend="Type de contenu"
-              name="contenu"
-              options={contentOptions}
-              value={form.content}
-              onChange={(content) => update('content', content)}
+              legend="Trier par"
+              name="ordre"
+              options={sortOptions}
+              value={form.sort}
+              onChange={(sort) => update('sort', sort)}
             />
-            <div className="mt-8 grid gap-8 lg:grid-cols-2">
-              <AuthorsPicker
-                label="Cibler uniquement ces comptes"
-                help="Laisse vide pour cibler tous les comptes."
-                value={form.includeAuthors}
-                onChange={(value) => update('includeAuthors', value)}
-                suggestions={authors}
-                loading={authorsLoading}
-                unavailable={form.excludeAuthors}
-                unavailableLabel="déjà protégé"
-              />
-              <AuthorsPicker
-                label="Ne jamais toucher à ces comptes"
-                help="Leurs likes sont toujours gardés."
-                error={errors.excludeAuthors}
-                value={form.excludeAuthors}
-                onChange={(value) => update('excludeAuthors', value)}
-                suggestions={authors}
-                loading={authorsLoading}
-                unavailable={form.includeAuthors}
-                unavailableLabel="déjà ciblé"
-              />
-            </div>
-          </Section>
+          </div>
+          <div className="mt-6 grid gap-6 sm:grid-cols-2">
+            <Field id="date-debut" label="Date de début" error={errors.startDate}>
+              {(aria) => (
+                <input
+                  {...aria}
+                  type="date"
+                  max={today}
+                  value={form.startDate}
+                  onChange={(event) => update('startDate', event.target.value)}
+                  className="input"
+                />
+              )}
+            </Field>
+            <Field id="date-fin" label="Date de fin" error={errors.endDate}>
+              {(aria) => (
+                <input
+                  {...aria}
+                  type="date"
+                  max={today}
+                  value={form.endDate}
+                  onChange={(event) => update('endDate', event.target.value)}
+                  className="input"
+                />
+              )}
+            </Field>
+          </div>
+          <p className="mt-6 flex gap-3 border-t border-border pt-6 text-small text-fg-muted">
+            <InfoIcon className="mt-1 h-4 w-4 shrink-0 text-info-strong" />
+            <span>
+              Instagram web ne filtre ni par compte ni par type de contenu. L’aperçu indique le
+              compte et le type de chaque like : tu décocheras ceux que tu veux garder.
+            </span>
+          </p>
         </Card>
 
         <Card padding="lg">
@@ -204,7 +152,7 @@ export function FiltersPage() {
               setErrors((previous) => ({ ...previous, maxScanned: undefined }))
             }}
             label="Faire d’abord un essai"
-            description="Ne lire que les likes les plus récents de la période, pour tester sur un petit volume."
+            description="Ne lire que les premiers likes de la liste filtrée, pour tester sur un petit volume."
           />
           {trial && (
             <Field
@@ -253,15 +201,5 @@ export function FiltersPage() {
         </div>
       </form>
     </AppPage>
-  )
-}
-
-function Section({ title, help, children }: { title: string; help: string; children: ReactNode }) {
-  return (
-    <div>
-      <h2 className="text-h3 text-fg">{title}</h2>
-      <p className="mt-1 text-small text-fg-muted">{help}</p>
-      <div className="mt-6">{children}</div>
-    </div>
   )
 }

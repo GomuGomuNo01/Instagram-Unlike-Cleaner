@@ -26,7 +26,7 @@ from app.core.config import Settings, get_settings
 from app.core.db import OutdatedSchemaError, init_db, make_engine
 from app.core.logs import setup_logging
 from app.main import create_app
-from app.models.schemas import CleanupFilters, ContentFilter, SortOrder
+from app.models.schemas import CleanupFilters, SortOrder
 from app.models.tables import ItemStatus, JobStatus
 from app.services.cleanup import STOP_MESSAGES, CleanupControl, run_cleanup, today_count
 from app.services.jobs import (
@@ -188,28 +188,33 @@ def probe(timeout: TimeoutOption = 300) -> None:
     _run_in_browser(timeout, explore, explore_changed_layout=True)
 
 
+_INSTAGRAM_PANEL = "Filtre d'Instagram (panneau « Trier et filtrer »)"
+
+
 @app.command()
 def preview(
+    oldest_first: Annotated[
+        bool,
+        typer.Option(
+            help="Trier par : du plus ancien au plus récent (par défaut : du plus récent).",
+            rich_help_panel=_INSTAGRAM_PANEL,
+        ),
+    ] = False,
     start: Annotated[
         datetime | None,
-        typer.Option(formats=["%Y-%m-%d"], help="Likes faits à partir de cette date (AAAA-MM-JJ)."),
+        typer.Option(
+            formats=["%Y-%m-%d"],
+            help="Date de début : likes faits à partir de ce jour (AAAA-MM-JJ).",
+            rich_help_panel=_INSTAGRAM_PANEL,
+        ),
     ] = None,
     end: Annotated[
         datetime | None,
-        typer.Option(formats=["%Y-%m-%d"], help="Likes faits jusqu'à cette date (AAAA-MM-JJ)."),
-    ] = None,
-    oldest_first: Annotated[
-        bool, typer.Option(help="Parcourt les likes du plus ancien au plus récent.")
-    ] = False,
-    content: Annotated[
-        ContentFilter,
-        typer.Option(help="all, posts (photos et carrousels) ou reels (vidéos)."),
-    ] = ContentFilter.ALL,
-    author: Annotated[
-        list[str] | None, typer.Option(help="Ne cible que ce compte. Option répétable.")
-    ] = None,
-    exclude_author: Annotated[
-        list[str] | None, typer.Option(help="Ne touche jamais à ce compte. Option répétable.")
+        typer.Option(
+            formats=["%Y-%m-%d"],
+            help="Date de fin : likes faits jusqu'à ce jour (AAAA-MM-JJ).",
+            rich_help_panel=_INSTAGRAM_PANEL,
+        ),
     ] = None,
     max_scanned: Annotated[
         int | None,
@@ -219,17 +224,15 @@ def preview(
 ) -> None:
     """Prépare l'aperçu d'un nettoyage : liste les likes ciblés, sans rien retirer.
 
-    Dates et tri : filtre d'Instagram. Type et auteurs : filtrés par IUC, la version web
-    d'Instagram ne proposant pas ces critères.
+    Les critères sont ceux du filtre d'Instagram web, dans son panneau « Trier et filtrer » :
+    tri, date de début et date de fin du like. Pour garder un like, exclus-le ensuite de
+    l'aperçu avec `iuc exclude`.
     """
     try:
         filters = CleanupFilters(
             sort=SortOrder.OLDEST_FIRST if oldest_first else SortOrder.NEWEST_FIRST,
             start_date=start.date() if start else None,
             end_date=end.date() if end else None,
-            content=content,
-            include_authors=tuple(author or ()),
-            exclude_authors=tuple(exclude_author or ()),
         )
     except ValidationError as exc:
         messages = "; ".join(
@@ -256,10 +259,7 @@ def preview(
         items = pending_items(engine, result.job_id)
         summary = summarize(items)
         report = export_csv(items, settings.reports_dir / f"apercu-{result.job_id}.csv")
-        typer.echo(
-            f"Aperçu n°{result.job_id} prêt : {result.targeted} likes ciblés "
-            f"sur {result.scanned} lus."
-        )
+        typer.echo(f"Aperçu n°{result.job_id} prêt : {result.targeted} likes ciblés.")
         if summary.total:
             kinds = ", ".join(
                 f"{kind_label(kind)} {count}" for kind, count in summary.by_kind.items()
@@ -568,10 +568,15 @@ def _describe(overview: JobOverview) -> str:
         period = f"likes du {filters.start_date or 'début'} au {filters.end_date or 'jour'}"
     else:
         period = "toutes dates"
+    order = (
+        "du plus ancien au plus récent"
+        if filters.sort is SortOrder.OLDEST_FIRST
+        else "du plus récent au plus ancien"
+    )
     return (
         f"n°{overview.id} [{STATUS_LABELS[overview.status]}] "
         f"créé le {overview.created_at.astimezone():%d/%m/%Y %H:%M} "
-        f"({period}, contenu : {filters.content}) - à traiter {overview.to_process}, "
+        f"({period}, {order}) - à traiter {overview.to_process}, "
         f"retirés {counts.get(ItemStatus.DONE, 0)}, échecs {counts.get(ItemStatus.FAILED, 0)}, "
         f"exclus {counts.get(ItemStatus.EXCLUDED, 0)}, "
         f"introuvables {counts.get(ItemStatus.SKIPPED, 0)}"

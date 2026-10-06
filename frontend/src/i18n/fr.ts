@@ -1,6 +1,6 @@
 // Vocabulaire partagé de l'interface, en français. Une version anglaise reprendra les mêmes
 // clés (même structure, autres textes).
-import type { ContentFilter, ItemStatus, JobStatus, MediaKind, SortOrder } from '../api/types'
+import type { ItemStatus, JobStatus, MediaKind, SortOrder } from '../api/types'
 
 export const jobStatusLabels: Record<JobStatus, string> = {
   created: 'créé',
@@ -26,12 +26,6 @@ export const mediaKindLabels: Record<MediaKind, string> = {
   photo: 'Photo',
   video: 'Vidéo / Reel',
   carousel: 'Carrousel',
-}
-
-export const contentFilterLabels: Record<ContentFilter, string> = {
-  all: 'Tous les contenus',
-  posts: 'Publications (photos et carrousels)',
-  reels: 'Reels (vidéos)',
 }
 
 export const sortOrderLabels: Record<SortOrder, string> = {

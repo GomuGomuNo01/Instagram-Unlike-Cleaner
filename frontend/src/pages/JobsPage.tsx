@@ -14,8 +14,8 @@ import {
   Skeleton,
   SkeletonBlock,
 } from '../components/ui'
-import { contentFilterLabels } from '../i18n/fr'
-import { formatDateTime, formatDay, plural } from '../lib/format'
+import { describeFilters } from '../lib/filters'
+import { formatDateTime, plural } from '../lib/format'
 
 /** Historique des nettoyages, avec l'action utile selon l'état de chacun. */
 export function JobsPage() {
@@ -101,7 +101,7 @@ function JobCard({ job }: { job: Job }) {
             <JobStatusBadge status={job.status} />
           </div>
           <p className="mt-1 text-small text-fg-muted">
-            Créé le {formatDateTime(job.created_at)}, {describeCriteria(job)}
+            Créé le {formatDateTime(job.created_at)}, {describeFilters(job.filters)}
           </p>
           <p className="mt-3 text-small text-fg">
             {plural(job.counts.done ?? 0, 'retiré', 'retirés')},{' '}
@@ -137,13 +137,4 @@ function nextStep(job: Job): { to: string; label: string; primary: boolean } {
     default:
       return { to: `${base}/rapport`, label: 'Voir le rapport', primary: false }
   }
-}
-
-function describeCriteria(job: Job): string {
-  const { start_date: start, end_date: end, content } = job.filters
-  const period =
-    start || end
-      ? `likes du ${start ? formatDay(start) : 'début'} au ${end ? formatDay(end) : 'jour'}`
-      : 'tout l’historique'
-  return `${period}, ${contentFilterLabels[content ?? 'all'].toLowerCase()}`
 }

@@ -2,24 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import {
   buildJobRequest,
+  describeFilters,
   emptyFilters,
   localToday,
-  normalizeAuthor,
   validateFilters,
 } from './filters'
-
-describe('normalizeAuthor', () => {
-  it.each([
-    ['@Compte_A', 'compte_a'],
-    ['  auteur.b ', 'auteur.b'],
-    ['deux mots', null],
-    ['accent_é', null],
-    ['@', null],
-    ['a'.repeat(31), null],
-  ])('%s → %s', (raw, expected) => {
-    expect(normalizeAuthor(raw)).toBe(expected)
-  })
-})
 
 describe('validateFilters', () => {
   const today = '2026-10-05'
@@ -44,14 +31,6 @@ describe('validateFilters', () => {
     expect(inverted).toEqual({ endDate: 'La date de fin doit suivre la date de début.' })
   })
 
-  it('signale un compte à la fois ciblé et protégé sous la liste des comptes protégés', () => {
-    const errors = validateFilters(
-      { ...emptyFilters, includeAuthors: ['a', 'b'], excludeAuthors: ['b'] },
-      today,
-    )
-    expect(errors).toEqual({ excludeAuthors: 'Déjà dans les comptes ciblés : @b.' })
-  })
-
   it.each(['0', '-3', '2.5', 'abc'])('refuse un nombre maximal invalide (%s)', (value) => {
     expect(validateFilters({ ...emptyFilters, maxScanned: value }, today)).toHaveProperty(
       'maxScanned',
@@ -63,31 +42,42 @@ describe('buildJobRequest', () => {
   it('transforme les champs vides en null', () => {
     expect(buildJobRequest(emptyFilters)).toEqual({
       sort: 'newest_first',
-      content: 'all',
       start_date: null,
       end_date: null,
-      include_authors: [],
-      exclude_authors: [],
       max_scanned: null,
     })
   })
 
-  it('reprend les critères saisis', () => {
+  it('n’envoie que le filtre d’Instagram et la limite d’essai', () => {
     const request = buildJobRequest({
-      ...emptyFilters,
-      startDate: '2026-06-01',
       sort: 'oldest_first',
-      content: 'reels',
-      excludeAuthors: ['compte_a'],
+      startDate: '2026-06-01',
+      endDate: '2026-09-30',
       maxScanned: '25',
     })
-    expect(request).toMatchObject({
-      start_date: '2026-06-01',
+    expect(request).toEqual({
       sort: 'oldest_first',
-      content: 'reels',
-      exclude_authors: ['compte_a'],
+      start_date: '2026-06-01',
+      end_date: '2026-09-30',
       max_scanned: 25,
     })
+  })
+})
+
+describe('describeFilters', () => {
+  it('résume le tri et la période', () => {
+    expect(
+      describeFilters({ sort: 'oldest_first', start_date: '2019-01-01', end_date: '2021-12-31' }),
+    ).toBe('likes du 01/01/2019 au 31/12/2021, du plus ancien au plus récent')
+  })
+
+  it('complète une période ouverte', () => {
+    expect(
+      describeFilters({ sort: 'newest_first', start_date: null, end_date: '2021-12-31' }),
+    ).toBe('likes du début au 31/12/2021, du plus récent au plus ancien')
+    expect(describeFilters({ sort: 'newest_first' })).toBe(
+      'tout l’historique, du plus récent au plus ancien',
+    )
   })
 })
 

@@ -760,74 +760,15 @@
           }
         }
       }
-    },
-    "/api/authors": {
-      "get": {
-        "tags": [
-          "authors"
-        ],
-        "summary": "Get Authors",
-        "description": "Comptes dont tu as aimé des publications, d'après tes aperçus déjà collectés (ceux du\ncompte connecté s'il est connu), du plus fréquent au moins fréquent. Liste vide avant le\npremier aperçu.",
-        "operationId": "get_authors_api_authors_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/AuthorOut"
-                  },
-                  "type": "array",
-                  "title": "Response Get Authors Api Authors Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "APIKeyHeader": []
-          }
-        ]
-      }
     }
   },
   "components": {
     "schemas": {
-      "AuthorOut": {
-        "properties": {
-          "author": {
-            "type": "string",
-            "title": "Author"
-          },
-          "likes": {
-            "type": "integer",
-            "title": "Likes",
-            "description": "Likes encore en place, d'après les aperçus collectés."
-          }
-        },
-        "type": "object",
-        "required": [
-          "author",
-          "likes"
-        ],
-        "title": "AuthorOut"
-      },
       "CleanupFilters": {
         "properties": {
           "sort": {
             "$ref": "#/components/schemas/SortOrder",
+            "description": "« Trier par ».",
             "default": "newest_first"
           },
           "start_date": {
@@ -840,7 +781,8 @@
                 "type": "null"
               }
             ],
-            "title": "Start Date"
+            "title": "Start Date",
+            "description": "Date de début, date du like (vide : sans limite)."
           },
           "end_date": {
             "anyOf": [
@@ -852,41 +794,13 @@
                 "type": "null"
               }
             ],
-            "title": "End Date"
-          },
-          "content": {
-            "$ref": "#/components/schemas/ContentFilter",
-            "default": "all"
-          },
-          "include_authors": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Include Authors",
-            "default": []
-          },
-          "exclude_authors": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Exclude Authors",
-            "default": []
+            "title": "End Date",
+            "description": "Date de fin, date du like (vide : aujourd'hui)."
           }
         },
         "type": "object",
         "title": "CleanupFilters",
-        "description": "Critères d'un nettoyage.\n\nLe tri et les dates sont appliqués par Instagram, avec le filtre de la page des likes.\nLe type et les auteurs sont appliqués par IUC sur les vignettes collectées, car la\nversion web d'Instagram ne propose pas ces filtres. Quand un critère ne peut pas être\nvérifié pour un like (auteur ou type illisible), le like est gardé."
-      },
-      "ContentFilter": {
-        "type": "string",
-        "enum": [
-          "all",
-          "posts",
-          "reels"
-        ],
-        "title": "ContentFilter"
+        "description": "Critères d'un nettoyage : le filtre d'Instagram, tel que le propose Instagram web dans\nle panneau « Trier et filtrer » de la page des likes (tri, date de début et date de fin\ndu like). IUC applique ces critères en remplissant ce panneau ; il n'en ajoute aucun.\n\nLes champs inconnus sont ignorés : les nettoyages enregistrés avant la refonte du\nfiltrage (type de contenu, comptes) restent lisibles."
       },
       "DeletedOut": {
         "properties": {
@@ -1099,6 +1013,7 @@
         "properties": {
           "sort": {
             "$ref": "#/components/schemas/SortOrder",
+            "description": "« Trier par ».",
             "default": "newest_first"
           },
           "start_date": {
@@ -1111,7 +1026,8 @@
                 "type": "null"
               }
             ],
-            "title": "Start Date"
+            "title": "Start Date",
+            "description": "Date de début, date du like (vide : sans limite)."
           },
           "end_date": {
             "anyOf": [
@@ -1123,27 +1039,8 @@
                 "type": "null"
               }
             ],
-            "title": "End Date"
-          },
-          "content": {
-            "$ref": "#/components/schemas/ContentFilter",
-            "default": "all"
-          },
-          "include_authors": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Include Authors",
-            "default": []
-          },
-          "exclude_authors": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Exclude Authors",
-            "default": []
+            "title": "End Date",
+            "description": "Date de fin, date du like (vide : aujourd'hui)."
           },
           "max_scanned": {
             "anyOf": [
@@ -1158,9 +1055,10 @@
             "title": "Max Scanned"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "title": "JobCreate",
-        "description": "Critères du nettoyage, et limite facultative de vignettes à lire (pour un essai)."
+        "description": "Critères du nettoyage, et limite facultative de vignettes à lire (pour un essai).\nUn champ inconnu est refusé, pour qu'un ancien critère ne soit jamais ignoré en silence."
       },
       "JobOut": {
         "properties": {

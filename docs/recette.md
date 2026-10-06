@@ -23,9 +23,10 @@ Note pour chaque étape : date, résultat, et le numéro du nettoyage concerné.
 
 ## Aperçu
 
-- [ ] Critères : période, ordre, type, un compte ciblé, un compte protégé ; la liste des comptes
-      s’affiche après un premier aperçu.
-- [ ] L’aperçu ne contient que des likes conformes aux critères ; le compte protégé est absent.
+- [ ] Filtre d’Instagram : « Trier par », date de début et date de fin ; dans la fenêtre Chromium,
+      le panneau « Trier et filtrer » reçoit exactement ces valeurs.
+- [ ] L’aperçu contient les mêmes likes, dans le même ordre, que la page des likes filtrée à la
+      main avec ces réglages ; chaque like affiche son compte et son type.
 - [ ] Décocher un like le garde ; « Tout décocher » puis « Tout cocher » fonctionnent.
 
 ## Nettoyage réel (quelques dizaines de likes)
@@ -37,6 +38,8 @@ Note pour chaque étape : date, résultat, et le numéro du nettoyage concerné.
 - [ ] Reprise : aucun like n’est retraité (le rapport ne compte aucun doublon).
 - [ ] `DAILY_LIMIT` bas (par exemple 10) : arrêt à la limite avec le bon message.
 - [ ] Le rapport, le CSV et le JSON concordent avec ce qui s’est passé.
+- [ ] Le CSV s’ouvre dans Excel sans réglage : colonnes séparées, accents corrects, date et heure
+      du retrait lisibles sans élargir les colonnes.
 
 ## Robustesse
 

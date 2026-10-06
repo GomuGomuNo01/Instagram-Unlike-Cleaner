@@ -13,35 +13,43 @@ function renderDemo() {
   )
 }
 
-it('applique les critères, laisse décocher, puis simule le nettoyage', async () => {
-  renderDemo()
-  // Par défaut, @ami_proche est protégé : ses deux likes ne sont pas ciblés.
-  expect(screen.getByText('8 likes seront retirés sur 10 likes.')).toBeInTheDocument()
+function authors() {
+  const list = screen.getByRole('list', { name: 'Likes ciblés par la simulation' })
+  return within(list)
+    .getAllByRole('checkbox')
+    .map((box) => box.getAttribute('aria-label'))
+}
 
-  await userEvent.click(screen.getByRole('radio', { name: 'Reels' }))
+it('applique le filtre d’Instagram, laisse décocher, puis simule le nettoyage', async () => {
+  renderDemo()
+  // Par défaut : likes jusqu'à 2021, du plus récent au plus ancien.
+  expect(screen.getByText('6 likes seront retirés sur 10 likes.')).toBeInTheDocument()
+  expect(authors()[0]).toBe('Retirer le like de @page_memes (Vidéo, 2021)')
+  // Comme sur Instagram : aucun filtre par compte ni par type.
+  expect(screen.queryByRole('radio', { name: 'Reels' })).not.toBeInTheDocument()
+
+  await userEvent.click(screen.getByRole('radio', { name: 'Du plus ancien au plus récent' }))
+  expect(authors()[0]).toBe('Retirer le like de @compte_humour (Vidéo, 2019)')
+
+  await userEvent.selectOptions(screen.getByLabelText('Date de début'), '2020')
   expect(screen.getByText('4 likes seront retirés sur 10 likes.')).toBeInTheDocument()
 
-  await userEvent.click(screen.getByRole('button', { name: '@club_sport' }))
-  expect(screen.getByRole('button', { name: /@club_sport/ })).toHaveAttribute(
-    'aria-pressed',
-    'true',
+  await userEvent.click(
+    screen.getByRole('checkbox', { name: 'Retirer le like de @ami_proche (Carrousel, 2020)' }),
   )
   expect(screen.getByText('3 likes seront retirés sur 10 likes.')).toBeInTheDocument()
-
-  await userEvent.click(screen.getByRole('checkbox', { name: /@compte_humour \(Vidéo, 2019\)/ }))
-  expect(screen.getByText('2 likes seront retirés sur 10 likes.')).toBeInTheDocument()
 
   await userEvent.click(screen.getByRole('button', { name: 'Lancer la simulation' }))
   expect(
     await screen.findByText(
-      'Simulation terminée : 2 likes retirés, 8 likes gardés.',
+      'Simulation terminée : 3 likes retirés, 7 likes gardés.',
       {},
       { timeout: 3000 },
     ),
   ).toBeInTheDocument()
 
   const list = screen.getByRole('list', { name: 'Likes ciblés par la simulation' })
-  expect(within(list).getAllByText('retiré')).toHaveLength(2)
+  expect(within(list).getAllByText('retiré')).toHaveLength(3)
   expect(within(list).getByText('gardé')).toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'Nettoyer mes vrais likes' })).toHaveAttribute(
     'href',
@@ -49,5 +57,5 @@ it('applique les critères, laisse décocher, puis simule le nettoyage', async (
   )
 
   await userEvent.click(screen.getByRole('button', { name: 'Recommencer' }))
-  expect(screen.getByText('3 likes seront retirés sur 10 likes.')).toBeInTheDocument()
+  expect(screen.getByText('4 likes seront retirés sur 10 likes.')).toBeInTheDocument()
 })

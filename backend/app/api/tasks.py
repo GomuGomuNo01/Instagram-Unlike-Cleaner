@@ -84,8 +84,8 @@ async def preview_task(
             state,
             job_id,
             ok=True,
-            message=f"Aperçu prêt : {result.targeted} likes ciblés sur {result.scanned} lus.",
-            result={"scanned": result.scanned, "targeted": result.targeted},
+            message=f"Aperçu prêt : {result.targeted} likes ciblés.",
+            result={"targeted": result.targeted},
         )
     except (PreviewError, ApiConflict) as exc:
         _fail_collecting_job(state, job_id, str(exc))

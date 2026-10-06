@@ -15,7 +15,6 @@ export interface EndData {
     skipped?: number
     remaining?: number
     detail?: string | null
-    scanned?: number
     targeted?: number
   } | null
   job: Job

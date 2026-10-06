@@ -820,24 +820,6 @@
     }
   }
 
-  /* --- Liste déroulante (popover) ------------------------------------------------------- */
-  .popover {
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    background-color: var(--color-surface);
-    box-shadow: var(--elevation-lg);
-    transform-origin: top;
-    animation: popover-in var(--transition-duration-component) var(--ease-out) both;
-  }
-
-  @keyframes popover-in {
-    from {
-      opacity: 0;
-      translate: 0 calc(var(--motion-distance-md) * -0.5);
-      scale: 1 var(--motion-scale-from);
-    }
-  }
-
   /* --- Accordéon (details/summary natif) ------------------------------------------------ */
   .disclosure > summary {
     list-style: none;

@@ -142,7 +142,11 @@ def build_report(engine: Engine, job_id: int) -> JobReport:
 
 
 def export_report_csv(report: JobReport, path: Path) -> Path:
-    """Écrit le détail du rapport dans un CSV lisible par Excel (« ; », UTF-8 avec BOM)."""
+    """Écrit le détail du rapport dans un CSV lisible par Excel (« ; », UTF-8 avec BOM).
+
+    Le moment du traitement tient sur deux colonnes, date puis heure : Excel convertit une
+    date avec heure en nombre, trop large pour sa colonne par défaut, et affiche « ##### »
+    tant que la colonne n'est pas élargie."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8-sig", newline="") as file:
         writer = csv.writer(file, delimiter=";")
@@ -154,6 +158,7 @@ def export_report_csv(report: JobReport, path: Path) -> Path:
                 "partagée le (selon Instagram)",
                 "statut",
                 "traité le",
+                "heure",
                 "détail",
                 "identifiant",
             ]
@@ -166,7 +171,8 @@ def export_report_csv(report: JobReport, path: Path) -> Path:
                     line.kind,
                     line.shared_on,
                     ITEM_STATUS_LABELS[line.status],
-                    _local(line.processed_at),
+                    _local(line.processed_at, "%d/%m/%Y"),
+                    _local(line.processed_at, "%H:%M"),
                     line.detail or "",
                     line.media_key,
                 ]
@@ -242,5 +248,5 @@ def _iso(value: datetime | None) -> str | None:
     return value.isoformat() if value else None
 
 
-def _local(value: datetime | None) -> str:
-    return value.astimezone().strftime("%d/%m/%Y %H:%M") if value else ""
+def _local(value: datetime | None, fmt: str = "%d/%m/%Y %H:%M") -> str:
+    return value.astimezone().strftime(fmt) if value else ""

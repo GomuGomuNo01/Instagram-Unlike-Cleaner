@@ -374,7 +374,7 @@ function ItemsReview({ job, onJobChange }: { job: Job; onJobChange: (job: Job) =
               ))}
               {page.items.length === 0 && (
                 <li className="px-6 py-12 text-center text-small text-fg-muted">
-                  Aucun like ne correspond à ces critères.
+                  Instagram n’affiche aucun like avec ce filtre.
                 </li>
               )}
             </ul>

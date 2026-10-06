@@ -27,8 +27,7 @@ class PreviewError(RuntimeError):
 @dataclass(frozen=True)
 class PreviewResult:
     job_id: int
-    scanned: int  # vignettes lues dans la grille, après le filtre d'Instagram
-    targeted: int  # likes retenus après les critères d'IUC
+    targeted: int  # likes lus dans la grille, après le filtre d'Instagram
 
 
 @dataclass(frozen=True)
@@ -48,8 +47,9 @@ async def run_preview(
     on_progress: Callable[[int], None] | None = None,
     job_id: int | None = None,
 ) -> PreviewResult:
-    """Crée une demande, collecte les likes ciblés sur la page des likes déjà ouverte, et
-    les enregistre au statut « en attente » : rien n'est retiré à cette étape.
+    """Crée une demande, applique le filtre d'Instagram sur la page des likes déjà ouverte,
+    puis enregistre chaque like de la grille filtrée au statut « en attente » : rien n'est
+    retiré à cette étape.
 
     `job_id` désigne une demande déjà créée (statut « collecte »), par exemple par l'API,
     qui doit renvoyer son numéro avant la fin de la collecte.
@@ -78,18 +78,15 @@ async def run_preview(
             published_on=thumbnail.published_on,
         )
         for position, thumbnail in enumerate(thumbnails)
-        if filters.matches(thumbnail.author, thumbnail.media_kind)
     ]
     with Session(engine) as db:
         db.add_all(targeted)
         job = db.get(Job, job_id)
         assert job is not None
         change_status(job, JobStatus.READY)
-        log_event(
-            db, job_id, f"Aperçu prêt : {len(targeted)} likes ciblés sur {len(thumbnails)} lus"
-        )
+        log_event(db, job_id, f"Aperçu prêt : {len(targeted)} likes ciblés")
         db.commit()
-    return PreviewResult(job_id=job_id, scanned=len(thumbnails), targeted=len(targeted))
+    return PreviewResult(job_id=job_id, targeted=len(targeted))
 
 
 async def _interruption_message(session: BrowserSession, exc: Exception) -> str:

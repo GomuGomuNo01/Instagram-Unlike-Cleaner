@@ -7,6 +7,7 @@ import {
   BriefcaseIcon,
   ClockIcon,
   FileTextIcon,
+  GaugeIcon,
   KeyboardIcon,
   ListCheckIcon,
   LockIcon,
@@ -14,11 +15,10 @@ import {
   RotateIcon,
   ShieldIcon,
   SlidersIcon,
-  UsersIcon,
 } from '../../components/icons'
 import { ButtonLink, Container, Disclosure, LiveDot, Section } from '../../components/ui'
 import { reveal, spotlight } from '../../lib/motion'
-import { MockAccounts, MockReport } from './mocks'
+import { MockFilterSummary, MockReport } from './mocks'
 
 type Icon = ComponentType<SVGProps<SVGSVGElement>>
 
@@ -151,14 +151,14 @@ export function Features() {
     >
       <ul ref={spotlight} className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Feature
-          icon={UsersIcon}
-          title="La liste de tes comptes"
-          text="Retrouve en un clic les comptes que tu as le plus aimés, pour les cibler ou les protéger."
+          icon={SlidersIcon}
+          title="Le filtre d’Instagram, tel quel"
+          text="Tri, date de début et date de fin du like : les réglages de son panneau « Trier et filtrer », appliqués pour toi sur ta page des likes."
           className="md:col-span-2"
           order={0}
         >
           <div className="rounded-lg border border-border bg-surface-muted p-4">
-            <MockAccounts />
+            <MockFilterSummary />
           </div>
         </Feature>
         <Feature
@@ -174,9 +174,9 @@ export function Features() {
           </div>
         </Feature>
         <Feature
-          icon={SlidersIcon}
-          title="Filtres précis"
-          text="Période du like, ordre de parcours, type de contenu, comptes ciblés ou protégés."
+          icon={GaugeIcon}
+          title="Un essai d’abord"
+          text="Lis seulement les premiers likes de la liste, ou limite un lancement, pour tester sur un petit volume."
           order={0}
         />
         <Feature
@@ -273,7 +273,11 @@ const questions = [
   ],
   [
     'Puis-je choisir précisément quels likes retirer ?',
-    'Oui : période, type de contenu, comptes à cibler ou à protéger, puis un aperçu où tu décoches chaque like à garder.',
+    'Oui, en deux temps. Le filtre d’Instagram cible une période (date de début, date de fin du like) dans l’ordre de ton choix. Puis l’aperçu liste chaque like ciblé : tu décoches ceux que tu veux garder.',
+  ],
+  [
+    'Pourquoi pas de filtre par compte ou par type de contenu ?',
+    'Instagram web ne le propose pas : son panneau « Trier et filtrer » se limite au tri et aux dates. IUC s’en tient à ce filtre. L’aperçu affiche le compte et le type de chaque like, pour décocher ceux à garder.',
   ],
   [
     'Combien de temps faut-il ?',

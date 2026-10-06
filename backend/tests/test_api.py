@@ -170,6 +170,24 @@ async def test_invalid_criteria_are_rejected(client: AsyncClient) -> None:
     assert response.status_code == 422
 
 
+@pytest.mark.parametrize(
+    "criteria",
+    [{"content": "reels"}, {"include_authors": ["compte"]}, {"exclude_authors": ["compte"]}],
+)
+async def test_criteria_beyond_instagram_filter_are_rejected(
+    client: AsyncClient, criteria: dict[str, object]
+) -> None:
+    """Seul le filtre d'Instagram est accepté : un ancien critère n'est jamais ignoré en
+    silence."""
+    response = await client.post("/api/jobs", json=criteria)
+
+    assert response.status_code == 422
+
+
+async def test_authors_route_no_longer_exists(client: AsyncClient) -> None:
+    assert (await client.get("/api/authors")).status_code == 404
+
+
 # --- Parcours complet (navigateur sans fenêtre, faux Instagram) -----------------------------
 
 
@@ -346,21 +364,3 @@ async def test_delete_session_and_local_data(
     assert data_deleted.status_code == 200
     assert any(path.endswith("iuc.db") for path in data_deleted.json()["deleted"])
     assert (await client.get("/api/jobs")).json() == []  # base neuve, toujours utilisable
-
-
-@pytest.mark.browser
-async def test_authors_come_from_collected_previews(
-    app: FastAPI, client: AsyncClient, fake_instagram: FakeInstagram
-) -> None:
-    assert (await client.get("/api/authors")).json() == []
-    await connect(app, client, fake_instagram, make_likes(8))
-    await create_preview(app, client)
-
-    authors = (await client.get("/api/authors")).json()
-
-    assert authors == [
-        {"author": "auteur.b", "likes": 2},
-        {"author": "auteur_a", "likes": 2},
-        {"author": "auteur_c", "likes": 2},
-        {"author": "auteur_d", "likes": 2},
-    ]

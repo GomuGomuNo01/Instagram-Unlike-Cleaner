@@ -9,11 +9,9 @@ export type Job = Schemas['JobOut']
 export type JobCreate = Schemas['JobCreate']
 export type JobStatus = Schemas['JobStatus']
 export type Item = Schemas['ItemOut']
-export type Author = Schemas['AuthorOut']
 export type ItemsPage = Schemas['ItemsPage']
 export type ItemStatus = Schemas['ItemStatus']
 export type MediaKind = Schemas['MediaKind']
-export type ContentFilter = Schemas['ContentFilter']
 export type SortOrder = Schemas['SortOrder']
 
 /** Rapport d'un nettoyage (GET /api/jobs/{id}/report), tel que produit par

@@ -11,7 +11,7 @@ from sqlalchemy import Engine
 from sqlmodel import Session
 
 from app.core.db import init_db, make_engine
-from app.models.schemas import CleanupFilters, ContentFilter
+from app.models.schemas import CleanupFilters, SortOrder
 from app.models.tables import EventLog, ItemStatus, Job, JobStatus, LikedItem, MediaKind
 from app.services.cleanup import RUN_INTERRUPTED_EVENT, RUN_STARTED_EVENT, STOP_MESSAGES, StopReason
 from app.services.jobs import JobActionRefused
@@ -45,7 +45,7 @@ def engine(tmp_path: Path) -> Iterator[Engine]:
 def make_job(engine: Engine, events: list[tuple[timedelta, str]]) -> int:
     with Session(engine) as db:
         job = Job(
-            filters=CleanupFilters(content=ContentFilter.REELS).model_dump(mode="json"),
+            filters=CleanupFilters(sort=SortOrder.OLDEST_FIRST).model_dump(mode="json"),
             account_id="42",
             status=JobStatus.PAUSED,
             created_at=T0,
@@ -92,7 +92,7 @@ def test_report_counts_and_problems(engine: Engine) -> None:
         (3, ItemStatus.FAILED),
         (4, ItemStatus.SKIPPED),
     ]
-    assert report.filters.content is ContentFilter.REELS
+    assert report.filters.sort is SortOrder.OLDEST_FIRST
 
 
 def test_active_time_adds_up_runs_and_ignores_interrupted_ones(engine: Engine) -> None:
@@ -135,6 +135,7 @@ def test_csv_export_lists_every_like_with_its_status(engine: Engine, tmp_path: P
         "partagée le (selon Instagram)",
         "statut",
         "traité le",
+        "heure",
         "détail",
         "identifiant",
     ]
@@ -146,8 +147,12 @@ def test_csv_export_lists_every_like_with_its_status(engine: Engine, tmp_path: P
         "exclu",
         "à retirer",
     ]
-    assert rows[3][6] == "toujours affiché après « Je n’aime plus »"
-    assert rows[1][5] != "" and rows[6][5] == ""
+    assert rows[3][7] == "toujours affiché après « Je n’aime plus »"
+    # Date et heure séparées : Excel affiche « ##### » pour une date avec heure dans une
+    # colonne de largeur par défaut.
+    processed = (T0 + timedelta(minutes=2)).astimezone()
+    assert rows[1][5:7] == [f"{processed:%d/%m/%Y}", f"{processed:%H:%M}"]
+    assert rows[6][5:7] == ["", ""]
 
 
 def test_json_export_round_trips(engine: Engine, tmp_path: Path) -> None:
@@ -158,7 +163,7 @@ def test_json_export_round_trips(engine: Engine, tmp_path: Path) -> None:
     assert data["nettoyage"] == report.job_id
     assert data["likes_cibles"] == 6
     assert data["par_statut"]["done"] == 2
-    assert data["criteres"]["content"] == "reels"
+    assert data["criteres"]["sort"] == "oldest_first"
     assert data["likes"][2]["statut"] == "failed"
 
 

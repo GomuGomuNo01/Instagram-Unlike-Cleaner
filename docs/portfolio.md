@@ -8,11 +8,11 @@
 
 Une personne veut effacer des années de « J’aime » Instagram, mais l’application ne permet de
 les retirer qu’à la main, et les outils existants demandent souvent le mot de passe ou envoient
-les données à un tiers. IUC liste d’abord tous les likes ciblés (période, type, comptes) pour
-validation, puis les retire par lots avec pauses et limite quotidienne, sans jamais voir le mot
-de passe ni rien envoyer hors de l’ordinateur. Sur un vrai compte, 1 493 likes ont été recensés
-en 14 minutes et chaque lot retiré est contrôlé ; 283 tests automatisés prouvent qu’aucun
-identifiant n’est lu ni conservé.
+les données à un tiers. IUC cible les likes avec le filtre d’Instagram (tri, dates du like),
+liste chaque like pour validation, puis les retire par lots avec pauses et limite quotidienne,
+sans jamais voir le mot de passe ni rien envoyer hors de l’ordinateur. Sur un vrai compte,
+1 493 likes ont été recensés en 14 minutes et chaque lot retiré est contrôlé ; 266 tests
+automatisés prouvent qu’aucun identifiant n’est lu ni conservé.
 
 Technologies : Python, Playwright, FastAPI, SQLite, React, TypeScript, Tailwind CSS, GitHub
 Actions.
@@ -28,7 +28,10 @@ tiers : on échange un problème de confidentialité contre un autre.
 
 - La personne se connecte elle-même dans une fenêtre Chromium dédiée : IUC ne voit jamais le
   mot de passe et reconnaît la session à son seul cookie.
-- Un aperçu obligatoire liste chaque like ciblé ; rien n’est retiré sans validation.
+- Le ciblage reprend exactement le filtre de la version web d’Instagram (tri, date de début, date
+  de fin du like), sans critère inventé que la plateforme ne permet pas de vérifier.
+- Un aperçu obligatoire liste chaque like ciblé avec son compte et son type ; rien n’est retiré
+  sans validation.
 - Le retrait se fait par lots, avec pauses aléatoires, limite quotidienne et arrêt immédiat au
   moindre signal d’Instagram ; un nettoyage interrompu reprend sans rien retraiter.
 - Une interface web locale guide les cinq étapes (connexion, critères, aperçu, suivi, rapport) ;
@@ -38,7 +41,7 @@ tiers : on échange un problème de confidentialité contre un autre.
 
 - Essais sur un vrai compte : 1 493 likes recensés en 14 minutes, puis des lots retirés et
   vérifiés un à un au rechargement de la page.
-- 283 tests automatisés (238 côté serveur, 45 côté interface), relancés à chaque envoi par
+- 266 tests automatisés (227 côté serveur, 39 côté interface), relancés à chaque envoi par
   l’intégration continue ; ils prouvent notamment qu’aucun identifiant tapé n’est lu ni écrit sur
   le disque, et que le nettoyage s’arrête sur déconnexion, vérification ou message de limite.
 - Aucune vulnérabilité connue dans les dépendances (audits pip-audit et npm audit).

@@ -1,32 +1,21 @@
-import type { ContentFilter, JobCreate, SortOrder } from '../api/types'
+import type { Job, JobCreate, SortOrder } from '../api/types'
+import { sortOrderLabels } from '../i18n/fr'
+import { formatDay } from './format'
 
-/** Valeurs du formulaire des critères, telles que saisies. */
+/** Valeurs du formulaire des critères, telles que saisies : le filtre d'Instagram (panneau
+ * « Trier et filtrer »), et la limite facultative d'un essai. */
 export interface FiltersForm {
+  sort: SortOrder
   startDate: string // AAAA-MM-JJ, vide = depuis le début
   endDate: string // AAAA-MM-JJ, vide = jusqu'à aujourd'hui
-  sort: SortOrder
-  content: ContentFilter
-  includeAuthors: string[]
-  excludeAuthors: string[]
   maxScanned: string // vide = toute la grille
 }
 
 export const emptyFilters: FiltersForm = {
+  sort: 'newest_first',
   startDate: '',
   endDate: '',
-  sort: 'newest_first',
-  content: 'all',
-  includeAuthors: [],
-  excludeAuthors: [],
   maxScanned: '',
-}
-
-const USERNAME = /^[a-z0-9._]{1,30}$/
-
-/** « @Compte_A » → « compte_a » ; null si ce n'est pas un nom de compte Instagram valide. */
-export function normalizeAuthor(raw: string): string | null {
-  const author = raw.trim().replace(/^@/, '').toLowerCase()
-  return USERNAME.test(author) ? author : null
 }
 
 /** Erreur affichée sous chaque champ concerné. */
@@ -44,10 +33,6 @@ export function validateFilters(form: FiltersForm, today: string): FiltersErrors
   } else if (form.startDate && form.endDate && form.startDate > form.endDate) {
     errors.endDate = 'La date de fin doit suivre la date de début.'
   }
-  const both = form.includeAuthors.filter((author) => form.excludeAuthors.includes(author))
-  if (both.length) {
-    errors.excludeAuthors = `Déjà dans les comptes ciblés : ${both.map((a) => `@${a}`).join(', ')}.`
-  }
   if (
     form.maxScanned &&
     !(Number.isInteger(Number(form.maxScanned)) && Number(form.maxScanned) >= 1)
@@ -61,13 +46,21 @@ export function validateFilters(form: FiltersForm, today: string): FiltersErrors
 export function buildJobRequest(form: FiltersForm): JobCreate {
   return {
     sort: form.sort,
-    content: form.content,
     start_date: form.startDate || null,
     end_date: form.endDate || null,
-    include_authors: form.includeAuthors,
-    exclude_authors: form.excludeAuthors,
     max_scanned: form.maxScanned ? Number(form.maxScanned) : null,
   }
+}
+
+/** Résumé du filtre d'Instagram d'un nettoyage : « likes du 01/01/2019 au 31/12/2021, du
+ * plus récent au plus ancien ». */
+export function describeFilters(filters: Job['filters']): string {
+  const { start_date: start, end_date: end, sort } = filters
+  const period =
+    start || end
+      ? `likes du ${start ? formatDay(start) : 'début'} au ${end ? formatDay(end) : 'jour'}`
+      : 'tout l’historique'
+  return `${period}, ${sortOrderLabels[sort ?? 'newest_first'].toLowerCase()}`
 }
 
 /** Date du jour au format AAAA-MM-JJ, en heure locale. */

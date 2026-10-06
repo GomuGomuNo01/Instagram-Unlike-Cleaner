@@ -24,4 +24,5 @@ frontend/dist/
 
 # Démonstration (scripts/demo.py) et cahiers des charges, hors dépôt
 demo-data/
-docs/*.pdf
+docs/**/*.pdf
+docs/sources-cahiers/

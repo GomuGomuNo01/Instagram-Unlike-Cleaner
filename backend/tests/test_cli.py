@@ -35,8 +35,9 @@ def test_init_creates_data_dir_and_database(
     [
         (["--start", "2099-01-01"], "futur"),
         (["--start", "2025-06-01", "--end", "2025-01-01"], "précéder"),
-        (["--author", "deux mots"], "nom de compte"),
-        (["--author", "auteur", "--exclude-author", "@auteur"], "inclus et exclu"),
+        # Seul le filtre d'Instagram existe : plus de type de contenu ni de comptes.
+        (["--content", "reels"], "No such option"),
+        (["--exclude-author", "auteur"], "No such option"),
     ],
 )
 def test_preview_rejects_invalid_criteria_before_opening_the_browser(

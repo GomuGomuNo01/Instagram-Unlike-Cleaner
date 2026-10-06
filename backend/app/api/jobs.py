@@ -7,7 +7,7 @@ from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.responses import FileResponse, StreamingResponse
-from pydantic import Field
+from pydantic import ConfigDict, Field
 
 from app.api.deps import StateDep
 from app.api.schemas import ItemOut, ItemsPage, ItemsPatch, ItemsPatchOut, JobOut, StartRequest
@@ -38,7 +38,10 @@ router = APIRouter(prefix="/api/jobs", tags=["jobs"], dependencies=[Depends(requ
 
 
 class JobCreate(CleanupFilters):
-    """Critères du nettoyage, et limite facultative de vignettes à lire (pour un essai)."""
+    """Critères du nettoyage, et limite facultative de vignettes à lire (pour un essai).
+    Un champ inconnu est refusé, pour qu'un ancien critère ne soit jamais ignoré en silence."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
     max_scanned: int | None = Field(default=None, ge=1)
 

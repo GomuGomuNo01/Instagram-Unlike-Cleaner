@@ -110,29 +110,6 @@ def stop_job(engine: Engine, job_id: int) -> JobStatus:
         return previous
 
 
-def known_authors(engine: Engine, account_id: str | None) -> list[tuple[str, int]]:
-    """Comptes dont l'utilisateur a aimé des publications, d'après les aperçus déjà collectés
-    pour ce compte Instagram, avec le nombre de likes encore en place : ceux qu'IUC a retirés
-    sont exclus. Triés du plus fréquent au moins fréquent."""
-    with Session(engine) as db:
-        jobs = select(Job.id)
-        if account_id is not None:
-            jobs = jobs.where(Job.account_id == account_id)
-        removed = select(LikedItem.media_key).where(LikedItem.status == ItemStatus.DONE)
-        likes = func.count(func.distinct(LikedItem.media_key))
-        rows = db.exec(
-            select(LikedItem.author, likes)
-            .where(
-                col(LikedItem.job_id).in_(jobs),
-                col(LikedItem.author).is_not(None),
-                col(LikedItem.media_key).not_in(removed),
-            )
-            .group_by(col(LikedItem.author))
-            .order_by(likes.desc(), col(LikedItem.author))
-        ).all()
-        return [(author, count) for author, count in rows if author]
-
-
 def list_items(
     engine: Engine,
     job_id: int,

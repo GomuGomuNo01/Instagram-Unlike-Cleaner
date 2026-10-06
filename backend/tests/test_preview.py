@@ -12,7 +12,7 @@ from sqlmodel import Session, select
 from app.browser import locators
 from app.browser.session import BrowserSession, NavigationOutcome
 from app.core.db import init_db, make_engine
-from app.models.schemas import CleanupFilters, ContentFilter
+from app.models.schemas import CleanupFilters, SortOrder
 from app.models.tables import EventLog, ItemStatus, Job, JobStatus, LikedItem, MediaKind
 from app.services.preview import (
     PreviewError,
@@ -45,24 +45,25 @@ def job_events(engine: Engine, job_id: int) -> list[EventLog]:
 
 @pytest.mark.anyio
 @pytest.mark.browser
-async def test_run_preview_saves_only_targeted_likes(
+async def test_run_preview_saves_every_like_of_the_filtered_grid(
     session: BrowserSession, fake_instagram: FakeInstagram, engine: Engine
 ) -> None:
+    """Seul le filtre d'Instagram trie les likes : chaque vignette de la grille filtrée est
+    enregistrée, avec son auteur et son type pour l'aperçu."""
     likes = make_likes(30)
     await open_page(session, fake_instagram, interactive_likes_page(likes))
-    filters = CleanupFilters(content=ContentFilter.REELS, exclude_authors=("auteur_a",))
+    filters = CleanupFilters(sort=SortOrder.OLDEST_FIRST)
 
     result = await run_preview(session, engine, filters, account_id="42")
 
-    expected = [
-        (position, like.key)
-        for position, like in enumerate(likes)
-        if like.kind == "Vidéo" and like.author != "auteur_a"
-    ]
-    assert (result.scanned, result.targeted) == (30, len(expected))
+    assert result.targeted == 30
     items = pending_items(engine, result.job_id)
-    assert [(item.position, item.media_key) for item in items] == expected
-    assert {item.media_kind for item in items} == {MediaKind.VIDEO}
+    oldest_first = list(reversed(likes))  # tri appliqué par le panneau d'Instagram
+    assert [(item.position, item.media_key) for item in items] == [
+        (position, like.key) for position, like in enumerate(oldest_first)
+    ]
+    assert [item.author for item in items] == [like.author for like in oldest_first]
+    assert {item.media_kind for item in items} == set(MediaKind)
     with Session(engine) as db:
         job = db.get(Job, result.job_id)
         assert job is not None
